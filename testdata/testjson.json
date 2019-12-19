@@ -1,6 +1,7 @@
 {
-  "yarn": "Test",
+  "yarn": "blue skies",
   "numbers": 12345678,
+  "strangenumbers": 123.456,
   "truthy": true,
   "listing": ["dog", "cat"],
   "deep": {

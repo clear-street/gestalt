@@ -20,7 +20,7 @@ class Gestalt:
         self.__conf_file_format = 'json'
         self.__conf_file_name = '*'
         self.__conf_file_paths = []
-        self.__use_env = True
+        self.__use_env = False
         self.__env_prefix = ''
         self.__delim_char = '.'
         self.__conf_sets: Dict = dict()
@@ -61,7 +61,7 @@ class Gestalt:
 
     def __set(self, key:str, value:Union[str, int, float, bool, list], t:Type):
         if not isinstance(key, str):
-            raise ValueError(f'Given key is not of string type')
+            raise TypeError(f'Given key is not of string type')
         if not isinstance(value, t):
             raise TypeError(f'Input value when setting {t} of type {type(value)} is not permitted')
         if key in self.__conf_sets and not isinstance(self.__conf_sets[key], t):
@@ -71,26 +71,26 @@ class Gestalt:
     def set_string(self, key:str, value:str):
         self.__set(key, value, str)
 
-    def set_int(self, key:str, value:str):
+    def set_int(self, key:str, value:int):
         self.__set(key, value, int)
 
-    def set_float(self, key:str, value:str):
+    def set_float(self, key:str, value:float):
         self.__set(key, value, float)
 
-    def set_bool(self, key:str, value:str):
+    def set_bool(self, key:str, value:bool):
         self.__set(key, value, bool)
 
-    def set_list(self, key:str, value:str):
+    def set_list(self, key:str, value:list):
         self.__set(key, value, list)
 
     def __set_default(self, key:str, value:Union[str, int, float, bool, list], t:Type):
         if not isinstance(key, str):
-            raise ValueError(f'Given key is not of string type')
+            raise TypeError(f'Given key is not of string type')
         if not isinstance(value, t):
             raise TypeError(f'Input value when setting default {t} of type {type(value)} is not permitted')
-        if key in self.__conf_sets and not isinstance(self.__conf_sets[key], t):
-            raise TypeError(f'Overriding default key {key} with type {type(self.__conf_sets[key])} with a {t} is not permitted')
-        self.__conf_sets[key] = value
+        if key in self.__conf_defaults and not isinstance(self.__conf_defaults[key], t):
+            raise TypeError(f'Overriding default key {key} with type {type(self.__conf_defaults[key])} with a {t} is not permitted')
+        self.__conf_defaults[key] = value
 
     def set_default_string(self, key:str, value:str):
         self.__set_default(key, value, str)
@@ -107,9 +107,11 @@ class Gestalt:
     def set_default_list(self, key:str, value:str):
         self.__set_default(key, value, list)
 
-    def __get(self, key:str, default:Union[str, int, float, bool, List], t:Type) -> Union[str, int, float, bool, List]:
+    def __get(self, key:str, default:Union[str, int, float, bool, list], t:Type) -> Union[str, int, float, bool, list]:
         if not isinstance(key, str):
-            raise ValueError(f'Given key is not of string type')
+            raise TypeError(f'Given key is not of string type')
+        if default and not isinstance(default, t):
+            raise TypeError(f'Provided default is of incorrect type {type(default)}, it should be of type {t}')
         if key in self.__conf_sets:
             return self.__conf_sets[key]
         if self.__use_env:
@@ -124,10 +126,7 @@ class Gestalt:
                 raise TypeError(f'The requested key of {key} is not of type {t} (it is {type(self.__conf_data[key])})')
             return self.__conf_data[key]
         if default:
-            try:
-                return t(default)
-            except ValueError as e:
-                raise ValueError(f'Could not convert provided default to {t} format: {e}')
+            return default
         if key in self.__conf_defaults:
             return self.__conf_defaults[key]
         raise ValueError(f'Given key {key} is not in any configuration and no default is provided')
