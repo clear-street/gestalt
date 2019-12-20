@@ -7,24 +7,25 @@ from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 
 class Gestalt:
     def __init__(self) -> None:
-        self.__conf_data: Dict[
-            Text, Union[List[Any], Text, int, bool, float]] = dict()
+        self.__conf_data: Dict[Text, Union[List[Any], Text, int, bool,
+                                           float]] = dict()
         self.__conf_file_format: Text = 'json'
         self.__conf_file_name: Text = '*'
         self.__conf_file_paths: List[str] = []
         self.__use_env: bool = False
         self.__env_prefix: Text = ''
         self.__delim_char: Text = '.'
-        self.__conf_sets: Dict[
-            Text, Union[List[Any], Text, int, bool, float]] = dict()
-        self.__conf_defaults: Dict[
-            Text, Union[List[Any], Text, int, bool, float]] = dict()
+        self.__conf_sets: Dict[Text, Union[List[Any], Text, int, bool,
+                                           float]] = dict()
+        self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
+                                               float]] = dict()
 
-    def __flatten(self,
-                  d: MutableMapping[Text, Any],
-                  parent_key: str = '',
-                  sep: str = '.'
-                  ) -> Dict[Text, Union[List[Any], Text, int, bool, float]]:
+    def __flatten(
+        self,
+        d: MutableMapping[Text, Any],
+        parent_key: str = '',
+        sep: str = '.'
+    ) -> Dict[Text, Union[List[Any], Text, int, bool, float]]:
         items: List[Any] = []
         for k, v in d.items():
             new_key = parent_key + sep + k if parent_key else k
@@ -89,10 +90,9 @@ class Gestalt:
     def set_list(self, key: str, value: List[Any]) -> None:
         self.__set(key, value, list)
 
-    def __set_default(self, key: str,
-                      value: Union[str, int, float, bool, List[Any]],
-                      t: Type[Union[str, int, float, bool, List[Any]]]
-                      ) -> None:
+    def __set_default(
+            self, key: str, value: Union[str, int, float, bool, List[Any]],
+            t: Type[Union[str, int, float, bool, List[Any]]]) -> None:
         if not isinstance(key, str):
             raise TypeError(f'Given key is not of string type')
         if not isinstance(value, t):
@@ -121,10 +121,11 @@ class Gestalt:
     def set_default_list(self, key: str, value: List[Any]) -> None:
         self.__set_default(key, value, list)
 
-    def __get(self, key: str,
-              default: Optional[Union[str, int, float, bool, List[Any]]],
-              t: Type[Union[str, int, float, bool, List[Any]]]
-              ) -> Union[str, int, float, bool, List[Any]]:
+    def __get(
+        self, key: str, default: Optional[Union[str, int, float, bool,
+                                                List[Any]]],
+        t: Type[Union[str, int, float, bool, List[Any]]]
+    ) -> Union[str, int, float, bool, List[Any]]:
         if not isinstance(key, str):
             raise TypeError(f'Given key is not of string type')
         if default and not isinstance(default, t):
@@ -167,8 +168,8 @@ class Gestalt:
         )
 
     def get_string(self, key: str, default: Optional[Text] = None) -> str:
-        val: Union[Text, int, float, bool, List[Any]] = self.__get(
-            key, default, str)
+        val: Union[Text, int, float, bool,
+                   List[Any]] = self.__get(key, default, str)
         if not isinstance(val, str):
             raise RuntimeError(
                 f'Gestalt error: expected to return string, but got {type(val)}'
@@ -176,8 +177,8 @@ class Gestalt:
         return val
 
     def get_int(self, key: str, default: Optional[int] = None) -> int:
-        val: Union[Text, int, float, bool, List[Any]] = self.__get(
-            key, default, int)
+        val: Union[Text, int, float, bool,
+                   List[Any]] = self.__get(key, default, int)
         if not isinstance(val, int):
             raise RuntimeError(
                 f'Gestalt error: expected to return string, but got {type(val)}'
@@ -185,8 +186,8 @@ class Gestalt:
         return val
 
     def get_float(self, key: str, default: Optional[float] = None) -> float:
-        val: Union[Text, int, float, bool, List[Any]] = self.__get(
-            key, default, float)
+        val: Union[Text, int, float, bool,
+                   List[Any]] = self.__get(key, default, float)
         if not isinstance(val, float):
             raise RuntimeError(
                 f'Gestalt error: expected to return float, but got {type(val)}'
@@ -194,17 +195,18 @@ class Gestalt:
         return val
 
     def get_bool(self, key: str, default: Optional[bool] = None) -> bool:
-        val: Union[Text, int, float, bool, List[Any]] = self.__get(
-            key, default, bool)
+        val: Union[Text, int, float, bool,
+                   List[Any]] = self.__get(key, default, bool)
         if not isinstance(val, bool):
             raise RuntimeError(
                 f'Gestalt error: expected to return bool, but got {type(val)}')
         return val
 
-    def get_list(self, key: str,
+    def get_list(self,
+                 key: str,
                  default: Optional[List[Any]] = None) -> List[Any]:
-        val: Union[Text, int, float, bool, List[Any]] = self.__get(
-            key, default, list)
+        val: Union[Text, int, float, bool,
+                   List[Any]] = self.__get(key, default, list)
         if not isinstance(val, list):
             raise RuntimeError(
                 f'Gestalt error: expected to return list, but got {type(val)}')
