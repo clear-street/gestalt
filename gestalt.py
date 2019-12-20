@@ -2,26 +2,30 @@ import os
 import glob
 import json
 import collections.abc as collections
-from typing import Type, Union, Optional, MutableMapping
+from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 
 
 class Gestalt:
-    def __init__(self):
-        self.__conf_data: dict = dict()
-        self.__conf_file_format: str = 'json'
-        self.__conf_file_name: str = '*'
-        self.__conf_file_paths: list = []
+    def __init__(self) -> None:
+        self.__conf_data: Dict[
+            Text, Union[List[Any], Text, int, bool, float]] = dict()
+        self.__conf_file_format: Text = 'json'
+        self.__conf_file_name: Text = '*'
+        self.__conf_file_paths: List[str] = []
         self.__use_env: bool = False
-        self.__env_prefix: str = ''
-        self.__delim_char: str = '.'
-        self.__conf_sets: dict = dict()
-        self.__conf_defaults: dict = dict()
+        self.__env_prefix: Text = ''
+        self.__delim_char: Text = '.'
+        self.__conf_sets: Dict[
+            Text, Union[List[Any], Text, int, bool, float]] = dict()
+        self.__conf_defaults: Dict[
+            Text, Union[List[Any], Text, int, bool, float]] = dict()
 
     def __flatten(self,
-                  d: MutableMapping,
+                  d: MutableMapping[Text, Any],
                   parent_key: str = '',
-                  sep: str = '.'):
-        items: list = []
+                  sep: str = '.'
+                  ) -> Dict[Text, Union[List[Any], Text, int, bool, float]]:
+        items: List[Any] = []
         for k, v in d.items():
             new_key = parent_key + sep + k if parent_key else k
             if isinstance(v, collections.MutableMapping):
@@ -30,7 +34,7 @@ class Gestalt:
                 items.append((new_key, v))
         return dict(items)
 
-    def add_config_path(self, path: str):
+    def add_config_path(self, path: str) -> None:
         tmp = os.path.abspath(path)
         print(tmp)
         if not os.path.lexists(tmp):
@@ -39,7 +43,7 @@ class Gestalt:
             raise ValueError(f'Given path of {path} is not a directory')
         self.__conf_file_paths.append(tmp)
 
-    def build_config(self):
+    def build_config(self) -> None:
         # Load all the files in path
         for p in self.__conf_file_paths:
             files = glob.glob(
@@ -51,12 +55,12 @@ class Gestalt:
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
 
-    def auto_env(self):
+    def auto_env(self) -> None:
         self.__use_env = True
         self.__env_prefix = ''
 
-    def __set(self, key: str, value: Union[str, int, float, bool, list],
-              t: Type[Union[str, int, float, bool, list]]):
+    def __set(self, key: str, value: Union[str, int, float, bool, List[Any]],
+              t: Type[Union[str, int, float, bool, List[Any]]]) -> None:
         if not isinstance(key, str):
             raise TypeError(f'Given key is not of string type')
         if not isinstance(value, t):
@@ -70,24 +74,25 @@ class Gestalt:
             )
         self.__conf_sets[key] = value
 
-    def set_string(self, key: str, value: str):
+    def set_string(self, key: str, value: str) -> None:
         self.__set(key, value, str)
 
-    def set_int(self, key: str, value: int):
+    def set_int(self, key: str, value: int) -> None:
         self.__set(key, value, int)
 
-    def set_float(self, key: str, value: float):
+    def set_float(self, key: str, value: float) -> None:
         self.__set(key, value, float)
 
-    def set_bool(self, key: str, value: bool):
+    def set_bool(self, key: str, value: bool) -> None:
         self.__set(key, value, bool)
 
-    def set_list(self, key: str, value: list):
+    def set_list(self, key: str, value: List[Any]) -> None:
         self.__set(key, value, list)
 
     def __set_default(self, key: str,
-                      value: Union[str, int, float, bool, list],
-                      t: Type[Union[str, int, float, bool, list]]):
+                      value: Union[str, int, float, bool, List[Any]],
+                      t: Type[Union[str, int, float, bool, List[Any]]]
+                      ) -> None:
         if not isinstance(key, str):
             raise TypeError(f'Given key is not of string type')
         if not isinstance(value, t):
@@ -101,25 +106,25 @@ class Gestalt:
                             )
         self.__conf_defaults[key] = value
 
-    def set_default_string(self, key: str, value: str):
+    def set_default_string(self, key: str, value: str) -> None:
         self.__set_default(key, value, str)
 
-    def set_default_int(self, key: str, value: int):
+    def set_default_int(self, key: str, value: int) -> None:
         self.__set_default(key, value, int)
 
-    def set_default_float(self, key: str, value: float):
+    def set_default_float(self, key: str, value: float) -> None:
         self.__set_default(key, value, float)
 
-    def set_default_bool(self, key: str, value: bool):
+    def set_default_bool(self, key: str, value: bool) -> None:
         self.__set_default(key, value, bool)
 
-    def set_default_list(self, key: str, value: list):
+    def set_default_list(self, key: str, value: List[Any]) -> None:
         self.__set_default(key, value, list)
 
     def __get(self, key: str,
-              default: Optional[Union[str, int, float, bool, list]],
-              t: Type[Union[str, int, float, bool, list]]
-              ) -> Union[str, int, float, bool, list]:
+              default: Optional[Union[str, int, float, bool, List[Any]]],
+              t: Type[Union[str, int, float, bool, List[Any]]]
+              ) -> Union[str, int, float, bool, List[Any]]:
         if not isinstance(key, str):
             raise TypeError(f'Given key is not of string type')
         if default and not isinstance(default, t):
@@ -161,24 +166,26 @@ class Gestalt:
             f'Given key {key} is not in any configuration and no default is provided'
         )
 
-    def get_string(self, key: str, default: str = None) -> str:
-        val: Union[str, int, float, bool, list] = self.__get(key, default, str)
+    def get_string(self, key: str, default: Optional[Text] = None) -> str:
+        val: Union[Text, int, float, bool, List[Any]] = self.__get(
+            key, default, str)
         if not isinstance(val, str):
             raise RuntimeError(
                 f'Gestalt error: expected to return string, but got {type(val)}'
             )
         return val
 
-    def get_int(self, key: str, default: int = None) -> int:
-        val: Union[str, int, float, bool, list] = self.__get(key, default, int)
+    def get_int(self, key: str, default: Optional[int] = None) -> int:
+        val: Union[Text, int, float, bool, List[Any]] = self.__get(
+            key, default, int)
         if not isinstance(val, int):
             raise RuntimeError(
                 f'Gestalt error: expected to return string, but got {type(val)}'
             )
         return val
 
-    def get_float(self, key: str, default: float = None) -> float:
-        val: Union[str, int, float, bool, list] = self.__get(
+    def get_float(self, key: str, default: Optional[float] = None) -> float:
+        val: Union[Text, int, float, bool, List[Any]] = self.__get(
             key, default, float)
         if not isinstance(val, float):
             raise RuntimeError(
@@ -186,21 +193,22 @@ class Gestalt:
             )
         return val
 
-    def get_bool(self, key: str, default: bool = None) -> bool:
-        val: Union[str, int, float, bool, list] = self.__get(
+    def get_bool(self, key: str, default: Optional[bool] = None) -> bool:
+        val: Union[Text, int, float, bool, List[Any]] = self.__get(
             key, default, bool)
         if not isinstance(val, bool):
             raise RuntimeError(
                 f'Gestalt error: expected to return bool, but got {type(val)}')
         return val
 
-    def get_list(self, key: str, default: list = None) -> list:
-        val: Union[str, int, float, bool, list] = self.__get(
+    def get_list(self, key: str,
+                 default: Optional[List[Any]] = None) -> List[Any]:
+        val: Union[Text, int, float, bool, List[Any]] = self.__get(
             key, default, list)
         if not isinstance(val, list):
             raise RuntimeError(
                 f'Gestalt error: expected to return list, but got {type(val)}')
         return val
 
-    def dump(self) -> str:
+    def dump(self) -> Text:
         return str(json.dumps(self.__conf_data, indent=4))
