@@ -1,3 +1,5 @@
+# type: ignore
+
 import pytest
 import os
 from gestalt import gestalt
@@ -22,7 +24,7 @@ def test_loading_json_nonexist_dir():
 def test_loading_json_file_not_dir():
     g = gestalt.Gestalt()
     with pytest.raises(ValueError) as terr:
-        g.add_config_path('./gestalt.py')
+        g.add_config_path('./setup.py')
         assert 'is not a directory' in terr
 
 

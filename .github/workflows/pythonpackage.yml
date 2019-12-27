@@ -32,12 +32,12 @@ jobs:
       run: |
         pip install pytest
         pip install pytest-cov
-        pytest -s --cov=gestalt .
+        pytest -s --cov=gestalt gestalt
     - name: Typecheck with mypy
       run: |
         pip install mypy
-        mypy --strict gestalt.py
+        mypy --strict gestalt
     - name: Style check with yapf
       run: |
         pip install yapf
-        yapf -d gestalt.py
+        yapf -d --recursive .
