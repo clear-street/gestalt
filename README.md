@@ -219,4 +219,3 @@ The `get` function will raise `TypeError`s in the following cases:
 1. The key is not a string
 2. The default value does not match the desired type
 3. The configuration has the key with a value of type `a`, when the user desires a value of type `b`
-

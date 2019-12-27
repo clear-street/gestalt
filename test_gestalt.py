@@ -208,6 +208,23 @@ def test_set_override():
     assert testval == 6543
 
 
+def test_set_bad_type_file_config():
+    g = gestalt.Gestalt()
+    g.add_config_path('./testdata')
+    g.build_config()
+    with pytest.raises(TypeError) as terr:
+        g.set_string('numbers', 'notgood')
+        assert 'File config has' in terr
+
+
+def test_set_bad_type_default_config():
+    g = gestalt.Gestalt()
+    g.set_default_string('mykey', 'mystring')
+    with pytest.raises(TypeError) as terr:
+        g.set_int('mykey', 123)
+        assert 'Default config has' in terr
+
+
 # Test Env Variables
 def test_get_env_string():
     g = gestalt.Gestalt()
@@ -308,3 +325,20 @@ def test_set_default_string_bad_val_override():
         g.set_default_string('mykey', 'myval')
         g.set_default_int('mykey', 1234)
         assert 'Overriding default key' in terr
+
+
+def test_set_default_bad_type_file_config():
+    g = gestalt.Gestalt()
+    g.add_config_path('./testdata')
+    g.build_config()
+    with pytest.raises(TypeError) as terr:
+        g.set_default_string('numbers', 'notgood')
+        assert 'File config has' in terr
+
+
+def test_set_default_bad_type_set_config():
+    g = gestalt.Gestalt()
+    g.set_string('mykey', 'mystring')
+    with pytest.raises(TypeError) as terr:
+        g.set_default_int('mykey', 123)
+        assert 'Set config has' in terr
