@@ -32,7 +32,7 @@ jobs:
       run: |
         pip install pytest
         pip install pytest-cov
-        pytest -s --cov=gestalt gestalt
+        pytest -s --cov=gestalt tests/*.py
     - name: Typecheck with mypy
       run: |
         pip install mypy
