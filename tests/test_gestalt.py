@@ -1,12 +1,14 @@
+# type: ignore
+
 import pytest
 import os
-from gestalt import gestalt
+import gestalt
 
 
 # Testing JSON Loading
 def test_loading_json():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     x = g.dump()
     assert len(x)
@@ -22,13 +24,13 @@ def test_loading_json_nonexist_dir():
 def test_loading_json_file_not_dir():
     g = gestalt.Gestalt()
     with pytest.raises(ValueError) as terr:
-        g.add_config_path('./gestalt.py')
+        g.add_config_path('./setup.py')
         assert 'is not a directory' in terr
 
 
 def test_get_wrong_type():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     with pytest.raises(TypeError) as terr:
         g.get_string('numbers')
@@ -37,7 +39,7 @@ def test_get_wrong_type():
 
 def test_get_non_exist_key():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     with pytest.raises(ValueError) as terr:
         g.get_string('non-exist')
@@ -46,7 +48,7 @@ def test_get_non_exist_key():
 
 def test_get_key_wrong_type():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     with pytest.raises(TypeError) as terr:
         g.get_string(1234)
@@ -55,7 +57,7 @@ def test_get_key_wrong_type():
 
 def test_get_key_wrong_default_type():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     with pytest.raises(TypeError) as terr:
         g.get_string('nonexist', 1234)
@@ -64,7 +66,7 @@ def test_get_key_wrong_default_type():
 
 def test_get_json_string():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     testval = g.get_string('yarn')
     assert testval == 'blue skies'
@@ -72,7 +74,7 @@ def test_get_json_string():
 
 def test_get_json_default_string():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     testval = g.get_string('nonexist', 'mydefval')
     assert testval == 'mydefval'
@@ -80,7 +82,7 @@ def test_get_json_default_string():
 
 def test_get_json_set_default_string():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     g.set_default_string('nonexisttest', 'otherdefval')
     testval = g.get_string('nonexisttest')
@@ -89,7 +91,7 @@ def test_get_json_set_default_string():
 
 def test_get_json_int():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     testval = g.get_int('numbers')
     assert testval == 12345678
@@ -97,7 +99,7 @@ def test_get_json_int():
 
 def test_get_json_float():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     testval = g.get_float('strangenumbers')
     assert testval == 123.456
@@ -105,7 +107,7 @@ def test_get_json_float():
 
 def test_get_json_bool():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     testval = g.get_bool('truthy')
     assert testval is True
@@ -113,7 +115,7 @@ def test_get_json_bool():
 
 def test_get_json_list():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     testval = g.get_list('listing')
     assert testval
@@ -123,7 +125,7 @@ def test_get_json_list():
 
 def test_get_json_nested():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     testval = g.get_string('deep.nested1')
     assert testval == 'hello'
@@ -199,7 +201,7 @@ def test_re_set_bad_type():
 
 def test_set_override():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     testval = g.get_int('numbers')
     assert testval == 12345678
@@ -210,7 +212,7 @@ def test_set_override():
 
 def test_set_bad_type_file_config():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     with pytest.raises(TypeError) as terr:
         g.set_string('numbers', 'notgood')
@@ -329,7 +331,7 @@ def test_set_default_string_bad_val_override():
 
 def test_set_default_bad_type_file_config():
     g = gestalt.Gestalt()
-    g.add_config_path('./testdata')
+    g.add_config_path('./tests/testdata')
     g.build_config()
     with pytest.raises(TypeError) as terr:
         g.set_default_string('numbers', 'notgood')
