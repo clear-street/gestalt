@@ -60,7 +60,6 @@ class Gestalt:
             ValueError: If the `path` does not exist or is it not a directory
         """
         tmp = os.path.abspath(os.path.expandvars(path))
-        print(tmp)
         if not os.path.lexists(tmp):
             raise ValueError(f'Given path of {path} does not exist')
         if not os.path.isdir(tmp):
