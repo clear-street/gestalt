@@ -3,14 +3,15 @@ import glob
 import json
 import collections.abc as collections
 from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
+import yaml
 
 
 class Gestalt:
     def __init__(self) -> None:
         """ Creates the default configuration manager
 
-        The default seetings are as follows:
-         - JSON filetype
+        The default settings are as follows:
+         - Supports JSON and YAML files types. YAML file types are prioritized
          - Environment variables disabled
          - Configuration delimiter is '.'
          - No environment variables prefix
@@ -73,12 +74,20 @@ class Gestalt:
         with the files that need to be loaded.
         """
         for p in self.__conf_file_paths:
-            files = glob.glob(
-                p + f'/{self.__conf_file_name}.{self.__conf_file_format}')
-            for f in files:
-                with open(f) as cf:
-                    d = json.load(cf)
-                    self.__conf_data.update(d)
+            json_files = glob.glob(
+                p + f'/{self.__conf_file_name}.json')
+            yaml_files = glob.glob(
+                p + f'/{self.__conf_file_name}.yaml')
+            for json_file in json_files:
+                with open(json_file) as jf:
+                    json_dict = json.load(jf)
+                    self.__conf_data.update(json_dict)
+
+            for yaml_file in yaml_files:
+                with open(yaml_file) as yf:
+                    yaml_dict = yaml.load(yf, Loader=yaml.FullLoader)
+                    self.__conf_data.update(yaml_dict)
+
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
 

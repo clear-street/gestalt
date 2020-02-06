@@ -131,6 +131,14 @@ def test_get_json_nested():
     assert testval == 'hello'
 
 
+def test_get_yaml_nested():
+    g = gestalt.Gestalt()
+    g.add_config_path('./tests/testdata')
+    g.build_config()
+    testval = g.get_string('deep_yaml.nest1.nest2.foo')
+    assert testval == 'hello'
+
+
 # Test Set Overriding
 def test_set_string():
     g = gestalt.Gestalt()
