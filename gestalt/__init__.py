@@ -18,7 +18,6 @@ class Gestalt:
         """
         self.__conf_data: Dict[Text, Union[List[Any], Text, int, bool,
                                            float]] = dict()
-        self.__conf_file_format: Text = 'json'
         self.__conf_file_name: Text = '*'
         self.__conf_file_paths: List[str] = []
         self.__use_env: bool = False
