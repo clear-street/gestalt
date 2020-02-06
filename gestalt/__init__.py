@@ -73,10 +73,8 @@ class Gestalt:
         with the files that need to be loaded.
         """
         for p in self.__conf_file_paths:
-            json_files = glob.glob(
-                p + f'/{self.__conf_file_name}.json')
-            yaml_files = glob.glob(
-                p + f'/{self.__conf_file_name}.yaml')
+            json_files = glob.glob(p + f'/{self.__conf_file_name}.json')
+            yaml_files = glob.glob(p + f'/{self.__conf_file_name}.yaml')
             for json_file in json_files:
                 with open(json_file) as jf:
                     json_dict = json.load(jf)
