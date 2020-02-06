@@ -1,5 +1,7 @@
 # Gestalt
 
+![Builds](https://github.com/clear-street/gestalt/workflows/Python%20package/badge.svg) [![codecov](https://codecov.io/gh/clear-street/gestalt/branch/master/graph/badge.svg)](https://codecov.io/gh/clear-street/gestalt) [![PyPI download month](https://img.shields.io/pypi/dm/gestalt-cfg.svg)](https://pypi.python.org/pypi/gestalt-cfg/) [![PyPI version shields.io](https://img.shields.io/pypi/v/gestalt-cfg.svg)](https://pypi.python.org/pypi/gestalt-cfg/) [![PyPI license](https://img.shields.io/pypi/l/gestalt-cfg.svg)](https://pypi.python.org/pypi/gestalt-cfg/)
+
 > Gestalt (/ɡəˈSHtält/) - _noun_ - an organized whole that is perceived as more than the sum of its parts.
 
 Gestalt is an opinionated, strongly typed, configuration library for Python 3.6+. Gestalt aims to simplify configuration loading, getting/setting, and management by letting the user focus on writing programs, and letting Gestalt check configuration types, location, and environment variable overrides.
