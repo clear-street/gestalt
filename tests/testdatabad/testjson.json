@@ -1,0 +1,8 @@
+foo:
+  bar: "tests"
+  biz: 123
+
+deep_yaml:
+  nest1:
+    nest2:
+      foo: "hello"
