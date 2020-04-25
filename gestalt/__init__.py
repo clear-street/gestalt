@@ -101,7 +101,9 @@ class Gestalt:
         """
         for p in self.__conf_file_paths:
             json_files = glob.glob(p + f'/{self.__conf_file_name}.json')
+            json_files.sort()
             yaml_files = glob.glob(p + f'/{self.__conf_file_name}.yaml')
+            yaml_files.sort()
             for json_file in json_files:
                 with open(json_file) as jf:
                     try:
