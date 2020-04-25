@@ -66,7 +66,8 @@ class Gestalt:
         if not os.path.exists(tmp):
             raise ValueError(f'Given directory path of {tmp} does not exist')
         if not os.path.isdir(tmp):
-            raise ValueError(f'Given directory path of {tmp} is not a directory')
+            raise ValueError(
+                f'Given directory path of {tmp} is not a directory')
         self.__conf_file_paths.append(tmp)
 
     def add_config_file(self, path: str) -> None:
@@ -107,14 +108,18 @@ class Gestalt:
                         json_dict = json.load(jf)
                         self.__conf_data.update(json_dict)
                     except json.JSONDecodeError as e:
-                        raise ValueError(f'File {json_file} is marked as ".json" but cannot be read as such: {e}')
+                        raise ValueError(
+                            f'File {json_file} is marked as ".json" but cannot be read as such: {e}'
+                        )
             for yaml_file in yaml_files:
                 with open(yaml_file) as yf:
                     try:
                         yaml_dict = yaml.load(yf, Loader=yaml.FullLoader)
                         self.__conf_data.update(yaml_dict)
                     except yaml.YAMLError as e:
-                        raise ValueError(f'File {yaml_file} is marked as ".yaml" but cannot be read as such: {e}')
+                        raise ValueError(
+                            f'File {yaml_file} is marked as ".yaml" but cannot be read as such: {e}'
+                        )
 
         for f in self.__conf_files:
             f_ext = f[-4:]
@@ -124,14 +129,18 @@ class Gestalt:
                         json_dict = json.load(jf)
                         self.__conf_data.update(json_dict)
                 except json.JSONDecodeError as e:
-                    raise ValueError(f'File {f} is marked as ".json" but cannot be read as such: {e}')
+                    raise ValueError(
+                        f'File {f} is marked as ".json" but cannot be read as such: {e}'
+                    )
             elif f_ext == 'yaml':
                 try:
                     with open(f) as yf:
                         yaml_dict = yaml.load(yf, Loader=yaml.FullLoader)
                         self.__conf_data.update(yaml_dict)
                 except yaml.YAMLError as e:
-                    raise ValueError(f'File {f} is marked as ".yaml" but cannot be read as such: {e}')
+                    raise ValueError(
+                        f'File {f} is marked as ".yaml" but cannot be read as such: {e}'
+                    )
 
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)

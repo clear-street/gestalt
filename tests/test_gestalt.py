@@ -21,11 +21,13 @@ def test_loading_json_file():
     x = g.dump()
     assert len(x)
 
+
 def test_loading_file_dir():
     g = gestalt.Gestalt()
     with pytest.raises(ValueError) as terr:
         g.add_config_file('./tests/testdata')
         assert 'is not a file' in terr
+
 
 def test_loading_file_nonexist():
     g = gestalt.Gestalt()
@@ -41,7 +43,7 @@ def test_loading_file_bad_yaml():
         g.add_config_file('./tests/testdatabad/testyaml.yaml')
         g.build_config()
         assert terr.type is ValueError
-        assert 'but cannot be read as such' in terr.value.args[0] 
+        assert 'but cannot be read as such' in terr.value.args[0]
 
 
 def test_loading_file_bad_json():
@@ -50,7 +52,7 @@ def test_loading_file_bad_json():
         g.add_config_file('./tests/testdatabad/testjson.json')
         g.build_config()
         assert terr.type is ValueError
-        assert 'but cannot be read as such' in terr.value.args[0] 
+        assert 'but cannot be read as such' in terr.value.args[0]
 
 
 def test_loading_dir_bad_files():
@@ -59,7 +61,7 @@ def test_loading_dir_bad_files():
         g.add_config_path('./tests/testdatabad')
         g.build_config()
         assert terr.type is ValueError
-        assert 'but cannot be read as such' in terr.value.args[0] 
+        assert 'but cannot be read as such' in terr.value.args[0]
 
 
 def test_loading_dir_bad_files_yaml_only():
@@ -68,7 +70,7 @@ def test_loading_dir_bad_files_yaml_only():
         g.add_config_path('./tests/testdatabadyaml')
         g.build_config()
         assert terr.type is ValueError
-        assert 'but cannot be read as such' in terr.value.args[0] 
+        assert 'but cannot be read as such' in terr.value.args[0]
 
 
 def test_loading_yaml_file():
