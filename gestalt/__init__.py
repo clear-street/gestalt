@@ -12,6 +12,8 @@ class Gestalt:
 
         The default settings are as follows:
          - Supports JSON and YAML files types. YAML file types are prioritized
+            - Files in a directory are loaded in alphabetical order for determinism
+         - Single config files are prioritized over config directories, regardless of format
          - Environment variables disabled
          - Configuration delimiter is '.'
          - No environment variables prefix
@@ -20,6 +22,7 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_file_name: Text = '*'
         self.__conf_file_paths: List[str] = []
+        self.__conf_files: List[str] = []
         self.__use_env: bool = False
         self.__env_prefix: Text = ''
         self.__delim_char: Text = '.'
@@ -60,11 +63,33 @@ class Gestalt:
             ValueError: If the `path` does not exist or is it not a directory
         """
         tmp = os.path.abspath(os.path.expandvars(path))
-        if not os.path.lexists(tmp):
-            raise ValueError(f'Given path of {path} does not exist')
+        if not os.path.exists(tmp):
+            raise ValueError(f'Given directory path of {path} does not exist')
         if not os.path.isdir(tmp):
-            raise ValueError(f'Given path of {path} is not a directory')
+            raise ValueError(f'Given directory path of {path} is not a directory')
         self.__conf_file_paths.append(tmp)
+
+    def add_config_file(self, path: str) -> None:
+        """Adds a path to a single file to read configs from
+
+        Configurations are read in the order they are added in, and overlapping keys are
+        overwritten in that same order, so the last config file added has the highest
+        priority. Single config files have higher priority than config directories
+
+        The provided path argument can contain environment variables and also be relative,
+        the library will expand this into an absolute path.
+
+        Args:
+            path (str): Path from which to load a configuration file
+
+        Raises:
+            ValueError: If the `path` does not exist or is it not a file
+        """
+        tmp = os.path.abspath(os.path.expandvars(path))
+        if not os.path.exists(tmp):
+            raise ValueError(f'Given file path of {path} does not exist')
+        if not os.path.isfile(tmp):
+            raise ValueError(f'Given file path of {path} is not a file')
 
     def build_config(self) -> None:
         """Renders all configuration paths into the internal data structure
@@ -77,13 +102,33 @@ class Gestalt:
             yaml_files = glob.glob(p + f'/{self.__conf_file_name}.yaml')
             for json_file in json_files:
                 with open(json_file) as jf:
-                    json_dict = json.load(jf)
-                    self.__conf_data.update(json_dict)
-
+                    try:
+                        json_dict = json.load(jf)
+                        self.__conf_data.update(json_dict)
+                    except json.JSONDecodeError as e:
+                        raise ValueError(f'File {json_file} is marked as ".json" but cannot be read as such: {e}')
             for yaml_file in yaml_files:
                 with open(yaml_file) as yf:
-                    yaml_dict = yaml.load(yf, Loader=yaml.FullLoader)
+                    try:
+                        yaml_dict = yaml.load(yf, Loader=yaml.FullLoader)
+                        self.__conf_data.update(yaml_dict)
+                    except yaml.YAMLError as e:
+                        raise ValueError(f'File {yaml_file} is marked as ".yaml" but cannot be read as such: {e}')
+
+        for f in self.__conf_files:
+            f_ext = f[-4:]
+            if f_ext == 'json':
+                try:
+                    json_dict = json.load(f)
+                    self.__conf_data.update(json_dict)
+                except json.JSONDecodeError as e:
+                    raise ValueError(f'File {json_file} is marked as ".json" but cannot be read as such: {e}')
+            elif f_ext == 'yaml':
+                try:
+                    yaml_dict = yaml.load(f, Loader=yaml.FullLoader)
                     self.__conf_data.update(yaml_dict)
+                except yaml.YAMLError as e:
+                    raise ValueError(f'File {yaml_file} is marked as ".yaml" but cannot be read as such: {e}')
 
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)

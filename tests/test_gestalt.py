@@ -14,6 +14,22 @@ def test_loading_json():
     assert len(x)
 
 
+def test_loading_json_file():
+    g = gestalt.Gestalt()
+    g.add_config_path('./testdata/testjson.json')
+    g.build_config()
+    x = g.dump()
+    assert len(x)
+
+
+def test_loading_yaml_file():
+    g = gestalt.Gestalt()
+    g.add_config_path('./testdata/testyaml.yaml')
+    g.build_config()
+    x = g.dump()
+    assert len(x)
+
+
 def test_loading_json_nonexist_dir():
     g = gestalt.Gestalt()
     with pytest.raises(ValueError) as terr:
