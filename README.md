@@ -29,7 +29,7 @@ Specifically, Gestalt enforces configs in the following order:
 
 1. Calls to `set_*`
 2. Environment Variables
-3. Config Files
+3. Config File Directories and Single Config Files
 4. Defaults provided in `get_*`
 5. Set default values
 
@@ -64,6 +64,8 @@ g = gestalt.Gestalt()
 
 ### Loading Configuration Files
 
+Configuration files are supported in JSON and YAML format, with YAML files being given priority over JSON.
+
 Loading a directory of configuration files is done by calling `add_config_path`
 
 ```python
@@ -77,13 +79,22 @@ g.add_config_path('./testdata2')
 g.add_config_path('./testdata3')
 ```
 
-After all the directory paths are added, we can render them:
+Note that files loaded from a directory are loaded in alphabetical order, with JSON files being loaded first, then YAML files.
+
+Individual files can also be loaded:
+
+```python
+g.add_config_file('./testfile.json')
+g.add_config_file('./testotherfile.yaml')
+```
+
+After all the directory paths and files are added, we can render them:
 
 ```python
 g.build_config()
 ```
 
-Note that the the last added directory path takes the most precedence, and will override conflicting keys from previous paths. In addition to this, the rendering flattens the config, for example, the configuration:
+Note that the the last added directory path takes the most precedence, and will override conflicting keys from previous paths. Individual files take precedence over directories. In addition to this, the rendering flattens the config, for example, the configuration:
 
 ```json
 {
