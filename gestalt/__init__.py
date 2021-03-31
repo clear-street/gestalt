@@ -5,6 +5,34 @@ import collections.abc as collections
 from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 import yaml
 
+class RemoteProvider:
+    def __init__(self):
+        self.provider = str()
+        self.endpoint = str()
+        self.path = str()
+        self.secret_keyring = str()
+
+    def provider(self) -> str:
+        return self.provider
+
+    def endpoint(self) -> str:
+        return self.endpoint
+
+    def path(self) -> str:
+        return self.path
+
+    def secret_keyring(self) -> str:
+        return self.secretKeyring
+
+    def addRemoteProvider(self, provider, endpoint, path, secret_keyring) -> None:
+        if provider: 
+            self.provider = provider
+        if endpoint:
+            self.endpoint = endpoint
+        if path:
+            self.path = path
+        if secret_keyring:
+            self.secret_keyring = secret_keyring
 
 class Gestalt:
     def __init__(self) -> None:
@@ -30,6 +58,7 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
+        self.__remote_provider = []
 
     def __flatten(
         self,
@@ -383,6 +412,11 @@ class Gestalt:
             f'Given key {key} is not in any configuration and no default is provided'
         )
 
+    def __provider_path_exists(self, rp: RemoteProvider):
+        if rp in self.__remote_provider:
+            return True
+        return False
+
     def get_string(self, key: str, default: Optional[Text] = None) -> str:
         """Gets the configuration string for a given key
 
@@ -518,3 +552,9 @@ class Gestalt:
         ret.update(self.__conf_data)
         ret.update(self.__conf_sets)
         return str(json.dumps(ret, indent=4))
+
+    def add_remote_provider(self, provider, endpoint, path) -> None:
+        if provider != "" and endpoint != "":
+            rp = RemoteProvider(provider, endpoint, path)
+        if self.__provider_path_exists(rp):
+            self.__remote_provider.append(rp)
