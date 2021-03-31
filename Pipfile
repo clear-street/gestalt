@@ -1,0 +1,13 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+PyYAML = "==5.3.1"
+hvac = {extras = ["parser"], version = "*"}
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"
