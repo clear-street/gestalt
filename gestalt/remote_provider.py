@@ -1,4 +1,6 @@
+from typing_extensions
 
+SupportedRemoteProviders: List[str] = ["etcd", "consul", "firestore"]
 
 class RemoteProvider:
     def __init__(self):
