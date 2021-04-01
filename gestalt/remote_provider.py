@@ -1,4 +1,4 @@
-from typing_extensions
+from typing import List
 
 SupportedRemoteProviders: List[str] = ["etcd", "consul", "firestore"]
 
