@@ -46,5 +46,3 @@ class VaultClient(hvac.Client):
             raise f"Unknown auth method {method_type}"
 
         self.client.login()
-
-## TODO: Token Renewals Leases

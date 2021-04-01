@@ -1,19 +1,29 @@
-import sys
+from gestalt import Gestalt
 from typing import Dict
-from vaultx import VaultClient
-from gestalt import gestalt
+from gestalt.configprovider.config_provider import ConfigProvider
+from gestalt.plugins.vault.client import VaultClient
 
-vaultProvider = Vaultx.VaultConfigProvider({"token": "something"})
-gestalt.remote.RegisterConfigProvider("vault", vault_provider)
-gestalt.AddRemoteProvider("vault", "/secret/blah/balh")
-getstalt.ReadRemoteConfig()
+g: Gestalt = Gestalt()
+class VaultConfigProvider(ConfigProvider):
+    """
+    """
 
-g: gestalt.Gestalt = gestalt.Gestalt()
-class VaultConfigProvider(gestalt.ConfigProvider):
     def __init__(self, config: Dict[str, str]):
+        """
+        """
         self.client: VaultClient = VaultClient(g.read_config(config))
 
     def Get(self, path) -> Dict[str, any]:
+        """
+
+        Args:
+
+
+        Raises:
+
+
+        Return:
+        """
         secret = self.client
 
         returns me a json
@@ -21,13 +31,17 @@ class VaultConfigProvider(gestalt.ConfigProvider):
         wrap it in a dict
     
     def Watch():
+        """
+        """
         pass
 
     def WatchChannel():
+        """
+
+        Args:
+
+        Return:
+
+        Raises:
+        """
         pass
-
-
-def read_config(config_path):
-    g = gestalt.Gestalt()
-    g.add_config_path(config_path)
-    g.build_config()
