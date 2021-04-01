@@ -7,6 +7,11 @@ from utility import new_config_provider_registry, config_provider
 import remote_provider
 import hvac
 
+config_provider: Dict[str, ConfigProvider] = {}
+
+def new_config_provider_registry() -> Dict[str, ConfigProvider]:
+        config_provider: Dict[str, ConfigProvider] = {} 
+        return config_provider
 
 class UnsupportedProviderType(Exception):
     pass
