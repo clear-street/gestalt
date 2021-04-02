@@ -536,11 +536,11 @@ class Gestalt:
         """
         self.config_provider_registry.register_provider(name, provider)
 
-    def add_remote_provider(self, rp: RemoteProvider, endpoint: str, path: str) -> None:
+    def add_remote_provider(self, rp: str, endpoint: str, path: str) -> None:
         """Adds remote provider to remote_providers
         
         Args:
-            rp (RemoteProvider): The remote provider we want to add
+            rp (str): The remote provider we want to add
             endpoint (str): The endpoint associated with the rp
             path (str): The path that relates to this remote provider for the Get call
         
