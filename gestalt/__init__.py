@@ -4,6 +4,8 @@ import json
 import collections.abc as collections
 from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 import yaml
+from gestalt.configprovider.config_provider import ConfigProvider, ConfigProviderRegistry
+from gestalt.remote_provider import RemoteProvider
 
 class Gestalt:
     def __init__(self) -> None:
@@ -29,7 +31,8 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
-        self.__remote_provider = []
+        self.__remote_providers: List[RemoteProvider] = []
+        self.config_provider_registry = ConfigProviderRegistry()
 
     def __flatten(
         self,
@@ -524,8 +527,51 @@ class Gestalt:
         ret.update(self.__conf_sets)
         return str(json.dumps(ret, indent=4))
 
-    def add_remote_provider(self, provider, endpoint, path) -> None:
-        if provider != "" and endpoint != "":
-            rp = RemoteProvider(provider, endpoint, path)
-        if self.__provider_path_exists(rp):
-            self.__remote_provider.append(rp)
+    def register_config_provider(self, name: str, provider: ConfigProvider) -> None:
+        """Registers a config provider for gestalt
+        
+        Args: 
+            name (str): The name of the provider
+            provider (ConfigProvider): The Config Provider to be registered
+        """
+        self.config_provider_registry.register_provider(name, provider)
+
+    def add_remote_provider(self, rp: RemoteProvider, endpoint: str, path: str) -> None:
+        """Adds remote provider to remote_providers
+        
+        Args:
+            rp (RemoteProvider): The remote provider we want to add
+            endpoint (str): The endpoint associated with the rp
+            path (str): The path that relates to this remote provider for the Get call
+        
+        Raises:
+            RuntimeError: If the args are empty at runtime, the function raises a runtime error.
+                This would indicate with the error on Remote Provider
+        """
+
+        if rp == "":
+            raise RuntimeError(
+                'Gestalt Remote Provider Error: provider cannot be empty' 
+            )
+
+        if  endpoint == "":
+            raise RuntimeError(
+                'Gestalt Remote Provider Error: endpoint cannot be empty'
+            )
+
+        if path == "":
+            raise RuntimeError(
+                'Gestalt Remote Provider Error: path cannot be empty'
+            )
+
+        remote_provider = RemoteProvider(rp, endpoint, path)
+        self.__remote_providers.append(remote_provider)
+
+    def read_remote_config(self) -> None:
+        """Attempts to get configuration from a remote source and read it in the
+        remote
+        """
+        for rp in self.__remote_providers:
+            config_provider = self.config_provider_registry.get_config_provider(rp)            
+            json_dict_secrets: Dict[str, any] = config_provider.Get(rp)
+            self.__conf_data.update(json_dict_secrets)
