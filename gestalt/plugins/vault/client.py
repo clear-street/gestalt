@@ -1,20 +1,32 @@
+import os
 import hvac
-
+from typing import Dict
 class VaultClient(hvac.Client):
+    """VaultClient is a wrapper library that builds on top of hvac
+    """
     url: str = ""
     token: str = ""
-    cert: tuple(str, str) = ("", "")
+    cert: str = ""
     verify: str = ""
-    
-    def __init__(self, vault_config):
-        self.client = hvac.Client(vault_config)
 
+    def __init__(self, url: str=os.environ['VAULT_ADDR'], token: str=os.environ['VAULT_TOKEN']) -> None:
+        """Initializes a hvac client
 
-    def __init__(self, url, token, cert, verify):
-        self.client = hvac.Client(url, token, cert, verify)
+        Args:
+            url (str): URL for the VAULT Address
+            token (str): token for the VAULT cluster
+        """
+        self.client = hvac.Client(url=url, token=token)
 
+    def auth(self, method_type: str, app_id: str, user_id: str, auth_params: Dict[any, any]) -> None:
+        """Authentication for the vault client, also logins the client into the Vault cluster
 
-    def auth(self, method_type, app_id, user_id, auth_params):
+        Args:
+            method_type (str): authentication type  
+            app_id (str): app_id for the app
+            user_id (str): user_id for the 
+            auth_params (Dict[any, any]): authentication params specific to the method type
+        """
         self.client.auth_app_id(app_id=app_id, user_id=user_id)
         if method_type == "approle":
             self.client.auth_approle(auth_params)
