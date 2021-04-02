@@ -3,7 +3,8 @@
 import pytest
 import os
 import gestalt
-
+from gestalt import remote_provider
+from gestalt.plugins.vault import VaultConfigProvider
 
 # Testing JSON Loading
 def test_loading_json():
@@ -419,3 +420,30 @@ def test_set_default_bad_type_set_config():
     with pytest.raises(TypeError) as terr:
         g.set_default_int('mykey', 123)
         assert 'Set config has' in terr
+
+
+# Testing Configuration Provider and Remote Provider
+def test_register_config_provider():
+    g = gestalt.Gestalt()
+    vaultProvider = VaultConfigProvider({})
+    g.register_config_provider({'vault', vaultProvider})
+    receivedProvider = g.config_provider_registry.config_providers['vault']
+    assert receivedProvider in vaultProvider
+
+
+def test_add_remote_provider():
+    g = gestalt.Gestalt()
+    rp = remote_provider.RemoteProvider("rp", "ep", "path")
+    g.add_remote_provider("rp", "ep", "path")
+    assert rp in g.__remote_providers
+
+
+def test_read_remote_config():
+    g = gestalt.Gestalt()
+    data = { "user": "test" }
+    vault_provider = VaultConfigProvider({})
+    g.register_config_provider("vault", vault_provider)
+    g.add_remote_provider("vault", "something", "service")
+    g.read_remote_config()
+    secret = g.dump()
+    assert secret in data
