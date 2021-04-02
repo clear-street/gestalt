@@ -1,3 +1,6 @@
+from abc import abstractclassmethod
+from gestalt.remote_provider import RemoteProvider
+import hvac
 from gestalt import Gestalt
 from typing import Dict
 from gestalt.configprovider.config_provider import ConfigProvider
@@ -5,43 +8,32 @@ from gestalt.plugins.vault.client import VaultClient
 
 g: Gestalt = Gestalt()
 class VaultConfigProvider(ConfigProvider):
-    """
+    """VaultConfigProvider that generates a config provider for Vault. 
+        
+       This class inherits from ConfigProvider
     """
 
     def __init__(self, config: Dict[str, str]):
-        """
-        """
-        self.client: VaultClient = VaultClient(g.read_config(config))
-
-    def Get(self, path) -> Dict[str, any]:
-        """
+        """Initializes the VaultConfigProvider
 
         Args:
-
-
-        Raises:
-
-
-        Return:
+            config (Dict[str])
         """
-        secret = self.client
+        self.client: hvac.Client = VaultClient(config)
 
-        returns me a json
-
-        wrap it in a dict
-    
-    def Watch():
-        """
-        """
-        pass
-
-    def WatchChannel():
-        """
+    @abstractclassmethod
+    def Get(self, rp: RemoteProvider) -> Dict[str, any]:
+        """Gets the keys from the Vault Cluster.
+        Currently only support kv.v2 secrets from the Vault Cluster 
 
         Args:
+            rp (RemoteProvider): The vault remote provider
 
-        Return:
-
-        Raises:
+        Returns:
+            Dict[str, any]: The key located at 'rp.path' 
         """
-        pass
+        # print(self.client.client.secrets)
+        secret = self.client.client.secrets.kv.v2.read_secret_version(
+            path=rp.path
+        )
+        return secret['data']['data']
