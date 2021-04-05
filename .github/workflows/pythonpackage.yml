@@ -21,7 +21,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        tests/scripts/install-vault.sh $${{ matrix.cault-version }}
+        tests/scripts/install_vault.sh $${{ matrix.vault-version }}
         pip install -r requirements.txt
         pip install -r requirements.test.txt
     - name: Lint with flake8
