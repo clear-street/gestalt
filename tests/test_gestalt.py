@@ -1,5 +1,7 @@
 # type: ignore
 
+import json
+from gestalt.plugins import vault
 import pytest
 import os
 import gestalt
@@ -426,24 +428,24 @@ def test_set_default_bad_type_set_config():
 def test_register_config_provider():
     g = gestalt.Gestalt()
     vaultProvider = VaultConfigProvider({})
-    g.register_config_provider({'vault', vaultProvider})
+    g.register_config_provider('vault', vaultProvider)
     receivedProvider = g.config_provider_registry.config_providers['vault']
-    assert receivedProvider in vaultProvider
+    assert receivedProvider == vaultProvider
 
 
 def test_add_remote_provider():
     g = gestalt.Gestalt()
     rp = remote_provider.RemoteProvider("rp", "ep", "path")
     g.add_remote_provider("rp", "ep", "path")
-    assert rp in g.__remote_providers
+    assert rp.__dict__ == g.get_remote_providers()[0].__dict__ 
 
 
 def test_read_remote_config():
     g = gestalt.Gestalt()
-    data = { "user": "test" }
+    data = { 'user' : '123' }
     vault_provider = VaultConfigProvider({})
     g.register_config_provider("vault", vault_provider)
     g.add_remote_provider("vault", "something", "service")
     g.read_remote_config()
     secret = g.dump()
-    assert secret in data
+    assert data == json.loads(secret)
