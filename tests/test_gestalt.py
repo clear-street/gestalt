@@ -3,8 +3,11 @@
 import json
 from gestalt.plugins import vault
 import pytest
+import hvac
 import os
 import gestalt
+from unittest.mock import MagicMock
+from unittest import TestCase
 from gestalt import remote_provider
 from gestalt.plugins.vault import VaultConfigProvider
 
@@ -443,9 +446,23 @@ def test_add_remote_provider():
 def test_read_remote_config():
     g = gestalt.Gestalt()
     data = { 'user' : '123' }
-    vault_provider = VaultConfigProvider({})
+    vault_provider = MagicMock()
+    vault_provider.Get.return_value = data
     g.register_config_provider("vault", vault_provider)
     g.add_remote_provider("vault", "something", "service")
     g.read_remote_config()
     secret = g.dump()
     assert data == json.loads(secret)
+
+def test_read_remote_config_not_found():
+    g = gestalt.Gestalt()
+    vault_provider = MagicMock()
+    VaultError = hvac.exceptions.VaultError('', '', '')
+    return_err = hvac.exceptions.InvalidRequest(VaultError)
+    vault_provider.Get.side_effect = hvac.exceptions.InvalidRequest(VaultError)
+    g.register_config_provider("vault", vault_provider)
+    g.add_remote_provider("vault", "something", "service")
+    try:
+        g.read_remote_config()
+    except Exception as err:
+        assert str(err) == str(return_err)
