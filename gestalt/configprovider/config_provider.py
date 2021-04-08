@@ -4,6 +4,7 @@ from gestalt.remote_provider import RemoteProvider
 
 config_provider: Dict[str, Any] = {}
 
+
 class ConfigProviderRegistry:
     """The registry for Config Providers
     """
@@ -32,14 +33,15 @@ class ConfigProviderRegistry:
             return self.config_providers[provider]
         return False
 
+
 class ConfigProvider:
     """ConfigProvider is the interface defined by Gestalt for remote config providers
     """
 
     config_provider_registry: ConfigProviderRegistry = ConfigProviderRegistry()
- 
+
     @abstractclassmethod
-    def Get(rp: RemoteProvider) -> Any: # type: ignore
+    def Get(rp: RemoteProvider) -> Any:  # type: ignore
         """Get Abstract Method which gets implemented by the sub class that inherits
         ConfigProvider
 
@@ -58,5 +60,6 @@ def new_config_provider_registry() -> Dict[str, ConfigProvider]:
     Returns:
         config_provider_registry: a new dictionary with fomat Dict[str, ConfigProvider]
     """
-    config_provider_registry: Dict[str, ConfigProvider] = {} 
+
+    config_provider_registry: Dict[str, ConfigProvider] = {}
     return config_provider_registry

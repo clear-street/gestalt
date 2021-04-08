@@ -2,11 +2,15 @@ from typing import List, Union
 
 SupportedRemoteProviders: List[str] = ["etcd", "consul", "firestore"]
 
+
 class RemoteProvider:
     """RemoteProvider class that generates a Remote Provider
     """
-
-    def __init__(self, provider: str, endpoint: str, path: str, secret_keystring: Union[str, None]=None):
+    def __init__(self,
+                 provider: str,
+                 endpoint: str,
+                 path: str,
+                 secret_keystring: Union[str, None] = None):
         """ Initializes the remote provider class
 
         Args:

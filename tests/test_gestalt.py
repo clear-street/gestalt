@@ -11,6 +11,7 @@ from unittest import TestCase
 from gestalt import remote_provider
 from gestalt.plugins.vault import VaultConfigProvider
 
+
 # Testing JSON Loading
 def test_loading_json():
     g = gestalt.Gestalt()

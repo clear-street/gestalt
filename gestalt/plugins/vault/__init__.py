@@ -1,13 +1,15 @@
 from abc import abstractclassmethod
 from gestalt.remote_provider import RemoteProvider
-import hvac # type: ignore
+import hvac  # type: ignore
 from gestalt import Gestalt
 from typing import Dict, Any
-from gestalt.configprovider.config_provider import ConfigProvider # type: ignore
-from gestalt.plugins.vault.client import VaultClient # type: ignore
+from gestalt.configprovider.config_provider import ConfigProvider  # type: ignore
+from gestalt.plugins.vault.client import VaultClient  # type: ignore
 
 g: Gestalt = Gestalt()
-class VaultConfigProvider(ConfigProvider): # type: ignore
+
+
+class VaultConfigProvider(ConfigProvider):  # type: ignore
     """VaultConfigProvider that generates a config provider for Vault. 
         
        This class inherits from ConfigProvider
@@ -33,10 +35,6 @@ class VaultConfigProvider(ConfigProvider): # type: ignore
         Returns:
             Dict[str, any]: The key located at 'rp.path' 
         """
-        # print(self.client.client.secrets)
-       
         secret: Dict[Any, Any] = self.client.secrets.kv.v2.read_secret_version(
-            path=rp.path
-        )
-        print(secret['data']['data'])
+            path=rp.path)
         return secret['data']['data']

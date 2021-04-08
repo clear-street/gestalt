@@ -4,8 +4,9 @@ import json
 import collections.abc as collections
 from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 import yaml
-from gestalt.configprovider.config_provider import ConfigProvider, ConfigProviderRegistry # type: ignore
+from gestalt.configprovider.config_provider import ConfigProvider, ConfigProviderRegistry  # type: ignore
 from gestalt.remote_provider import RemoteProvider
+
 
 class Gestalt:
     def __init__(self) -> None:
@@ -522,7 +523,8 @@ class Gestalt:
         ret.update(self.__conf_sets)
         return str(json.dumps(ret, indent=4))
 
-    def register_config_provider(self, name: str, provider: ConfigProvider) -> None:
+    def register_config_provider(self, name: str,
+                                 provider: ConfigProvider) -> None:
         """Registers a config provider for gestalt
         
         Args: 
@@ -546,18 +548,15 @@ class Gestalt:
 
         if rp == "":
             raise RuntimeError(
-                'Gestalt Remote Provider Error: provider cannot be empty' 
-            )
+                'Gestalt Remote Provider Error: provider cannot be empty')
 
-        if  endpoint == "":
+        if endpoint == "":
             raise RuntimeError(
-                'Gestalt Remote Provider Error: endpoint cannot be empty'
-            )
+                'Gestalt Remote Provider Error: endpoint cannot be empty')
 
         if path == "":
             raise RuntimeError(
-                'Gestalt Remote Provider Error: path cannot be empty'
-            )
+                'Gestalt Remote Provider Error: path cannot be empty')
 
         remote_provider = RemoteProvider(rp, endpoint, path)
         self.__remote_providers.append(remote_provider)
@@ -573,6 +572,7 @@ class Gestalt:
         remote
         """
         for rp in self.__remote_providers:
-            config_provider = self.config_provider_registry.get_config_provider(rp)            
+            config_provider = self.config_provider_registry.get_config_provider(
+                rp)
             json_dict_secrets: Dict[str, Any] = config_provider.Get(rp)
             self.__conf_data.update(json_dict_secrets)
