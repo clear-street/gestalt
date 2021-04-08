@@ -441,12 +441,12 @@ def test_add_remote_provider():
     g = gestalt.Gestalt()
     rp = remote_provider.RemoteProvider("rp", "ep", "path")
     g.add_remote_provider("rp", "ep", "path")
-    assert rp.__dict__ == g.get_remote_providers()[0].__dict__ 
+    assert rp.__dict__ == g.get_remote_providers()[0].__dict__
 
 
 def test_read_remote_config():
     g = gestalt.Gestalt()
-    data = { 'user' : '123' }
+    data = {'user': '123'}
     vault_provider = MagicMock()
     vault_provider.Get.return_value = data
     g.register_config_provider("vault", vault_provider)
@@ -454,6 +454,7 @@ def test_read_remote_config():
     g.read_remote_config()
     secret = g.dump()
     assert data == json.loads(secret)
+
 
 def test_read_remote_config_not_found():
     g = gestalt.Gestalt()
