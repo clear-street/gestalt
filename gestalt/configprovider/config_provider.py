@@ -1,15 +1,15 @@
 from abc import abstractclassmethod
-from typing import Dict, Union
+from typing import Dict, Union, Any
 from gestalt.remote_provider import RemoteProvider
 
-config_provider: Dict[str, any] = {}
+config_provider: Dict[str, Any] = {}
 
 class ConfigProviderRegistry:
     """The registry for Config Providers
     """
-    config_providers: Dict[str, any] = config_provider
+    config_providers: Dict[str, Any] = config_provider
 
-    def register_provider(self, name: str, provider: any) -> None:
+    def register_provider(self, name: str, provider: Any) -> None:
         """Receives a provider and registers it in the config_providers
 
         Args:
@@ -18,7 +18,7 @@ class ConfigProviderRegistry:
         """
         self.config_providers[name] = provider
 
-    def get_config_provider(self, rp: RemoteProvider) -> Union[any, bool]:
+    def get_config_provider(self, rp: RemoteProvider) -> Union[Any, bool]:
         """Gets a config providers from the list of remote providers
 
         Args:
@@ -36,10 +36,10 @@ class ConfigProvider:
     """ConfigProvider is the interface defined by Gestalt for remote config providers
     """
 
-    config_provider_registry: Dict = ConfigProviderRegistry()
+    config_provider_registry: ConfigProviderRegistry = ConfigProviderRegistry()
  
     @abstractclassmethod
-    def Get(rp: RemoteProvider) -> any:
+    def Get(rp: RemoteProvider) -> Any: # type: ignore
         """Get Abstract Method which gets implemented by the sub class that inherits
         ConfigProvider
 

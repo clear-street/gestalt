@@ -4,7 +4,7 @@ import json
 import collections.abc as collections
 from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 import yaml
-from gestalt.configprovider.config_provider import ConfigProvider, ConfigProviderRegistry
+from gestalt.configprovider.config_provider import ConfigProvider, ConfigProviderRegistry # type: ignore
 from gestalt.remote_provider import RemoteProvider
 
 class Gestalt:
@@ -386,11 +386,6 @@ class Gestalt:
             f'Given key {key} is not in any configuration and no default is provided'
         )
 
-    def __provider_path_exists(self, rp: RemoteProvider):
-        if rp in self.__remote_provider:
-            return True
-        return False
-
     def get_string(self, key: str, default: Optional[Text] = None) -> str:
         """Gets the configuration string for a given key
 
@@ -579,5 +574,5 @@ class Gestalt:
         """
         for rp in self.__remote_providers:
             config_provider = self.config_provider_registry.get_config_provider(rp)            
-            json_dict_secrets: Dict[str, any] = config_provider.Get(rp)
+            json_dict_secrets: Dict[str, Any] = config_provider.Get(rp)
             self.__conf_data.update(json_dict_secrets)

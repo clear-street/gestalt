@@ -1,13 +1,13 @@
 from abc import abstractclassmethod
 from gestalt.remote_provider import RemoteProvider
-import hvac
+import hvac # type: ignore
 from gestalt import Gestalt
-from typing import Dict
-from gestalt.configprovider.config_provider import ConfigProvider
-from gestalt.plugins.vault.client import VaultClient
+from typing import Dict, Any
+from gestalt.configprovider.config_provider import ConfigProvider # type: ignore
+from gestalt.plugins.vault.client import VaultClient # type: ignore
 
 g: Gestalt = Gestalt()
-class VaultConfigProvider(ConfigProvider):
+class VaultConfigProvider(ConfigProvider): # type: ignore
     """VaultConfigProvider that generates a config provider for Vault. 
         
        This class inherits from ConfigProvider
@@ -23,7 +23,7 @@ class VaultConfigProvider(ConfigProvider):
         self.client: hvac.Client = VaultClient(config)
 
     @abstractclassmethod
-    def Get(self, rp: RemoteProvider) -> Dict[str, any]:
+    def Get(self, rp: RemoteProvider) -> Any:
         """Gets the keys from the Vault Cluster.
         Currently only support kv.v2 secrets from the Vault Cluster 
 
@@ -35,7 +35,7 @@ class VaultConfigProvider(ConfigProvider):
         """
         # print(self.client.client.secrets)
        
-        secret = self.client.secrets.kv.v2.read_secret_version(
+        secret: Dict[Any, Any] = self.client.secrets.kv.v2.read_secret_version(
             path=rp.path
         )
         print(secret['data']['data'])
