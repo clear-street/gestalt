@@ -12,6 +12,7 @@ class VaultConfigProvider(ConfigProvider):
         
        This class inherits from ConfigProvider
     """
+    client: hvac.Client = hvac.Client()
 
     def __init__(self, config: Dict[str, str]):
         """Initializes the VaultConfigProvider
@@ -33,7 +34,9 @@ class VaultConfigProvider(ConfigProvider):
             Dict[str, any]: The key located at 'rp.path' 
         """
         # print(self.client.client.secrets)
-        secret = self.client.client.secrets.kv.v2.read_secret_version(
+       
+        secret = self.client.secrets.kv.v2.read_secret_version(
             path=rp.path
         )
+        print(secret['data']['data'])
         return secret['data']['data']
