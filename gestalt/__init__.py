@@ -567,6 +567,12 @@ class Gestalt:
         remote_provider = RemoteProvider(rp, endpoint, path)
         self.__remote_providers.append(remote_provider)
 
+    def get_remote_providers(self) -> List[RemoteProvider]:
+        """
+        Returns a list of remote providers
+        """
+        return self.__remote_providers
+
     def read_remote_config(self) -> None:
         """Attempts to get configuration from a remote source and read it in the
         remote
