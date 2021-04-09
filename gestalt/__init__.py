@@ -1,8 +1,11 @@
+from os import path
 import os
 import glob
 import json
+from stubs import HVAC_ClientAuthentication, HVAC_ClientConfig
+import hvac
 import collections.abc as collections
-from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
+from typing import Dict, List, Tuple, Type, Union, Optional, MutableMapping, Text, Any
 import yaml
 
 
@@ -30,7 +33,8 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
-
+        self.__conf_vault: Union[List[Any], Text, int, bool,
+                                               float] = List
     def __flatten(
         self,
         d: MutableMapping[Text, Any],
@@ -69,6 +73,17 @@ class Gestalt:
             raise ValueError(
                 f'Given directory path of {tmp} is not a directory')
         self.__conf_file_paths.append(tmp)
+
+    def __init_vault_client(self, url:str, token: str, cert: Union[Tuple(str, str), None], verify: Union[bool, str]) -> None:
+        self.vault_client: hvac.Client = hvac.Client(
+            url = url,
+            token = token,
+            cert = cert,
+            verify = verify,
+        )
+
+    def __authenticate_vault_client(self, role: str, jwt: str) -> None:
+        self.vault_client.auth_kubernetes(role=role, jwt=jwt)
 
     def add_config_file(self, path: str) -> None:
         """Adds a path to a single file to read configs from
@@ -179,7 +194,21 @@ class Gestalt:
             raise TypeError(
                 f'Overriding key {key} with type {type(self.__conf_sets[key])} with a {t} is not permitted'
             )
-        self.__conf_sets[key] = value
+        if key in self.__conf_sets and isinstance(self.__conf_sets[key],
+                                                  t):
+            self.__conf_sets[key] = value
+            return
+        if key in self.__conf_vault and not isinstance(self.__conf_vault[key],
+                                                       t):
+            raise TypeError(
+                f"Overriding key {key} with {value} in the vault cluster"
+            )
+        self.__conf_vault.append(key)
+        self.vault_client.secrets.kv.v2.create_or_update_secret(
+            path=f'{key}',
+            secret=dict(f'{value}')
+        )
+        
 
     def set_string(self, key: str, value: str) -> None:
         """Sets the override string configuration for a given key
@@ -270,7 +299,9 @@ class Gestalt:
             raise TypeError(f'Overriding default key {key} \
                     with type {type(self.__conf_defaults[key])} with a {t} is not permitted'
                             )
-        self.__conf_defaults[key] = value
+        if key in self.__conf_defaults and isinstance(
+                self.__conf_defaults[key], t):
+            self.__conf_defaults[key] = value
 
     def set_default_string(self, key: str, value: str) -> None:
         """Sets the default string configuration for a given key
@@ -379,9 +410,17 @@ class Gestalt:
                     f'Given default set key is not of type {t}, but of type {type(val)}'
                 )
             return val
+        print(f"Couldn't find the key: {key} in any of the configurations, checking in Vault")
+        if key in self.__conf_vault[key]:
+            val = self.vault_client.secrets.kv.v2.read_secret(path=key)['data']['data']
+            if not isinstance(val, t):
+                raise TypeError(
+                    f'Given vault set key is not type {t}, but of type {type(val)}'
+                )
         raise ValueError(
             f'Given key {key} is not in any configuration and no default is provided'
         )
+
 
     def get_string(self, key: str, default: Optional[Text] = None) -> str:
         """Gets the configuration string for a given key
@@ -518,3 +557,24 @@ class Gestalt:
         ret.update(self.__conf_data)
         ret.update(self.__conf_sets)
         return str(json.dumps(ret, indent=4))
+
+    def add_vault_config_provider(self, client_config: HVAC_ClientConfig,
+                                  auth_config: HVAC_ClientAuthentication) -> None:
+        """Initialized vault client and authenticates vault
+
+        Args:
+            client_config (HVAC_ClientConfig): initializes vault. URL can be set in VAULT_ADDR 
+                environment variable, token can be set to VAULT_TOKEN environment variable.
+                These will be picked by default if not set to empty string
+            auth_config (HVAC_ClientAuthentication): authenticates the initialized vault client
+                with role and jwt string from kubernetes
+        """ 
+        if client_config.url == "":
+            client_config.url = os.environ["VAULT_ADDR"]
+        if client_config.token == "":
+            client_config.token == os.environ["VAULT_TOKEN"]
+        self.__init_vault_client(client_config.url, client_config.token, client_config.cert, client_config.verify)
+        self.__authenticate_vault_client(auth_config.role, auth_config.jwt)
+        
+
+
