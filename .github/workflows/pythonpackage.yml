@@ -32,6 +32,7 @@ jobs:
       run: |
         docker run --rm -d --cap-add=IPC_LOCK -e 'VAULT_DEV_ROOT_TOKEN_ID=myroot' -e 'VAULT_ADDR=http://localhost:8200' --name vault-test -p 8200:8200 vault
         VAULT_CONTAINER_ID="$(docker ps -aqf "name=vault-test")"
+        docker exec ${VAULT_CONTAINER_ID} vault login myroot
         docker exec ${VAULT_CONTAINER_ID} vault kv put secret/test test_client=test_client_password 
     - name: Test with pytest
       env:
