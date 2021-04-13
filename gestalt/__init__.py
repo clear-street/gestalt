@@ -181,11 +181,13 @@ class Gestalt:
 
         if len(self.__vault_paths) > 0:
             print("Fetching secrets from VAULT")
-            for secret in self.__vault_paths:
+            for vault_secret_path in self.__vault_paths:
                 secret_token =  self.vault_client.secrets.kv.v2.read_secret_version(
-                    path=secret[1]
+                    path=vault_secret_path
                 )
-                self.__conf_data.update(secret[0], secret_token['data']['data'])
+                self.__conf_data.update(secret_token['data']['data'])
+
+            
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
@@ -568,7 +570,7 @@ class Gestalt:
 
     def add_vault_config_provider(
             self, client_config: HVAC_ClientConfig,
-            auth_config: HVAC_ClientAuthentication) -> None:
+            auth_config: Union[HVAC_ClientAuthentication, None]) -> None:
         """Initialized vault client and authenticates vault
 
         Args:
@@ -590,14 +592,16 @@ class Gestalt:
                                  client_config['token'],
                                  client_config['cert'],
                                  verify=verify)
-        self.__authenticate_vault_client(auth_config['role'],
+        
+        if not auth_config == None:
+            self.__authenticate_vault_client(auth_config['role'],
                                          auth_config['jwt'])
 
-    def add_vault_secret_path(self, key, path):
+    def add_vault_secret_path(self, key: str, path: str):
         """Adds a vault secret with key and path to gestalt
 
         Args:
             key (str): The key by which the secret is made available in configuration
             path (str): The path to the secret in vault cluster
         """
-        self.__vault_paths.append(tuple([key, path]))
+        self.__vault_paths.append(path)
