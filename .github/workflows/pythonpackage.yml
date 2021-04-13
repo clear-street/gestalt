@@ -11,6 +11,22 @@ jobs:
       matrix:
         python-version: [3.7, 3.8]
 
+    # Service containers to run with `runner-job`
+    services:
+      # Label used to access the service container
+      vault:
+        # Docker Hub image
+        image: vault
+        #
+        ports:
+          # Opens tcp port 6379 on the host and service container
+          - 8200:8200
+        env:
+          VAULT_DISABLE_MLOCK: True
+          VAULT_ADDR: http://localhost:8200
+          VAULT_DEV_ROOT_TOKEN_ID: myroot
+
+
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python ${{ matrix.python-version }}
@@ -30,7 +46,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=15 --max-line-length=127 --statistics
     - name: Run docker container for vault
       run: |
-        docker run --rm -d --cap-add=IPC_LOCK -e 'VAULT_DEV_ROOT_TOKEN_ID=myroot' -e 'VAULT_ADDR=http://localhost:8200' --name vault-test -p 8200:8200 vault
+        docker ps
         VAULT_CONTAINER_ID="$(docker ps -aqf "name=vault-test")"
         docker exec ${VAULT_CONTAINER_ID} vault login myroot
         docker exec ${VAULT_CONTAINER_ID} vault kv put secret/test test_client=test_client_password 
