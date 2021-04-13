@@ -6,9 +6,11 @@ import collections.abc as collections
 from typing import Dict, List, Tuple, Type, Union, Optional, MutableMapping, Text, Any, TypedDict, NamedTuple
 import yaml
 
+
 class CACertClient(NamedTuple):
     client_cert_path: str
     client_key_path: str
+
 
 class HVAC_ClientConfig(TypedDict):
     url: str
@@ -16,9 +18,11 @@ class HVAC_ClientConfig(TypedDict):
     cert: Union[None, CACertClient]
     verify: Union[None, bool]
 
+
 class HVAC_ClientAuthentication(TypedDict):
     role: str
-    jwt: str 
+    jwt: str
+
 
 class Gestalt:
     def __init__(self) -> None:
@@ -182,12 +186,9 @@ class Gestalt:
         if len(self.__vault_paths) > 0:
             print("Fetching secrets from VAULT")
             for vault_secret_path in self.__vault_paths:
-                secret_token =  self.vault_client.secrets.kv.v2.read_secret_version(
-                    path=vault_secret_path
-                )
+                secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
+                    path=vault_secret_path)
                 self.__conf_data.update(secret_token['data']['data'])
-
-            
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
@@ -222,7 +223,7 @@ class Gestalt:
                 f'Overriding key {key} with type {type(self.__conf_sets[key])} with a {t} is not permitted'
             )
         self.__conf_sets[key] = value
-        
+
     def set_string(self, key: str, value: str) -> None:
         """Sets the override string configuration for a given key
 
@@ -592,10 +593,10 @@ class Gestalt:
                                  client_config['token'],
                                  client_config['cert'],
                                  verify=verify)
-        
+
         if auth_config:
             self.__authenticate_vault_client(auth_config['role'],
-                                         auth_config['jwt'])
+                                             auth_config['jwt'])
 
     def add_vault_secret_path(self, key: str, path: str) -> None:
         """Adds a vault secret with key and path to gestalt
