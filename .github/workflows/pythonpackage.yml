@@ -17,7 +17,7 @@ jobs:
       vault:
         # Docker Hub image
         image: vault
-        #
+        options: --name vault-test
         ports:
           # Opens tcp port 6379 on the host and service container
           - 8200:8200
