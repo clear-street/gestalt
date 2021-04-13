@@ -36,7 +36,7 @@ jobs:
     - name: Test with pytest
       env:
         CODECOV_TOKEN: ${{ secrets.CODE_COV_TOKEN }}
-        VAULT_ADDR: localhost:8200
+        VAULT_ADDR: http://localhost:8200
         VAULT_TOKEN: "myroot"
       run: |
         pytest -s --cov=gestalt tests/*.py
