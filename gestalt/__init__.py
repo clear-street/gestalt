@@ -1,12 +1,24 @@
-from gestalt.stubs import HVAC_ClientAuthentication, HVAC_ClientConfig
 import os
 import glob
 import json
 import hvac
 import collections.abc as collections
-from typing import Dict, List, Tuple, Type, Union, Optional, MutableMapping, Text, Any
+from typing import Dict, List, Tuple, Type, Union, Optional, MutableMapping, Text, Any, TypedDict, NamedTuple
 import yaml
 
+class CACertClient(NamedTuple):
+    client_cert_path: str
+    client_key_path: str
+
+class HVAC_ClientConfig(TypedDict):
+    url: str
+    token: str
+    cert: Union[None, CACertClient]
+    verify: Union[None, bool]
+
+class HVAC_ClientAuthentication(TypedDict):
+    role: str
+    jwt: str 
 
 class Gestalt:
     def __init__(self) -> None:
@@ -34,6 +46,7 @@ class Gestalt:
                                                float]] = dict()
         self.__conf_vault: Dict[Text, Union[Text, List[Any], int, bool,
                                             float]] = dict()
+        self.__vault_paths: List[Tuple[str, str]] = []
 
     def __flatten(
         self,
@@ -111,7 +124,9 @@ class Gestalt:
         self.__conf_files.append(tmp)
 
     def build_config(self) -> None:
-        """Renders all configuration paths into the internal data structure
+        """Renders all configuration paths into the internal data structure.
+        It fetches any secrets available in vault as well and updates the
+        internal data structure.
 
         This does not affect if environment variables are used, it just deals
         with the files that need to be loaded.
@@ -164,6 +179,14 @@ class Gestalt:
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
 
+        if len(self.__vault_paths) > 0:
+            print("Fetching secrets from VAULT")
+            for secret in self.__vault_paths:
+                secret_token =  self.vault_client.secrets.kv.v2.read_secret_version(
+                    path=secret[1]
+                )
+                self.__conf_data.update(secret[0], secret_token['data']['data'])
+
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
 
@@ -196,15 +219,8 @@ class Gestalt:
             raise TypeError(
                 f'Overriding key {key} with type {type(self.__conf_sets[key])} with a {t} is not permitted'
             )
-        if key in self.__conf_sets and isinstance(self.__conf_sets[key], t):
-            self.__conf_sets[key] = value
-            return
-        if key in self.__conf_vault and not isinstance(self.__conf_vault[key],
-                                                       t):
-            raise TypeError(
-                f"Overriding key {key} with {value} in the vault cluster")
-        self.__conf_vault[f'{key}'] = value
-
+        self.__conf_sets[key] = value
+        
     def set_string(self, key: str, value: str) -> None:
         """Sets the override string configuration for a given key
 
@@ -294,11 +310,7 @@ class Gestalt:
             raise TypeError(f'Overriding default key {key} \
                     with type {type(self.__conf_defaults[key])} with a {t} is not permitted'
                             )
-        if key in self.__conf_defaults and isinstance(
-                self.__conf_defaults[key], t):
-            self.__conf_defaults[key] = value
-        if key in self.__conf_vault and isinstance(self.__conf_vault[key], t):
-            self.__conf_vault[key] = value
+        self.__conf_defaults[key] = value
 
     def set_default_string(self, key: str, value: str) -> None:
         """Sets the default string configuration for a given key
@@ -408,13 +420,7 @@ class Gestalt:
                 )
             return val
         if key in self.__conf_vault:
-            try:
-                val = self.vault_client.secrets.kv.v2.read_secret(
-                    path=key)['data']['data']
-            except hvac.exceptions.InvalidRequest:
-                raise ValueError(
-                    f"Given vault cluster does not store any value with {key} as the set key"
-                )
+            val = self.__conf_vault[key]
             if not isinstance(val, t):
                 raise TypeError(
                     f'Given vault set key is not type {t}, but of type {type(val)}'
@@ -586,3 +592,12 @@ class Gestalt:
                                  verify=verify)
         self.__authenticate_vault_client(auth_config['role'],
                                          auth_config['jwt'])
+
+    def add_vault_secret_path(self, key, path):
+        """Adds a vault secret with key and path to gestalt
+
+        Args:
+            key (str): The key by which the secret is made available in configuration
+            path (str): The path to the secret in vault cluster
+        """
+        self.__vault_paths.append(tuple([key, path]))
