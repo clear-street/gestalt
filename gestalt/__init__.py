@@ -46,7 +46,7 @@ class Gestalt:
                                                float]] = dict()
         self.__conf_vault: Dict[Text, Union[Text, List[Any], int, bool,
                                             float]] = dict()
-        self.__vault_paths: List[Tuple[str, str]] = []
+        self.__vault_paths: List[str] = []
 
     def __flatten(
         self,
@@ -570,7 +570,7 @@ class Gestalt:
 
     def add_vault_config_provider(
             self, client_config: HVAC_ClientConfig,
-            auth_config: Union[HVAC_ClientAuthentication, None]) -> None:
+            auth_config: Optional[HVAC_ClientAuthentication]) -> None:
         """Initialized vault client and authenticates vault
 
         Args:
@@ -593,11 +593,11 @@ class Gestalt:
                                  client_config['cert'],
                                  verify=verify)
         
-        if not auth_config == None:
+        if auth_config:
             self.__authenticate_vault_client(auth_config['role'],
                                          auth_config['jwt'])
 
-    def add_vault_secret_path(self, key: str, path: str):
+    def add_vault_secret_path(self, key: str, path: str) -> None:
         """Adds a vault secret with key and path to gestalt
 
         Args:
