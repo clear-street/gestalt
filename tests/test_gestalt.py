@@ -431,7 +431,7 @@ def test_vault_setup():
     client_config['cert'] = None
     client_config['verify'] = True
     g.add_vault_config_provider(client_config, auth_config=None)
-    assert g.vault_client.is_authenticated() == True
+    assert g.vault_client.is_authenticated()
 
 
 def test_vault_fail_setup():
@@ -443,7 +443,7 @@ def test_vault_fail_setup():
     client_config['verify'] = True
     g.add_vault_config_provider(client_config, auth_config=None)
     with pytest.raises(requests.exceptions.MissingSchema):
-        g.vault_client.is_authenticated() == False
+        g.vault_client.is_authenticated()
 
 
 def test_vault_fail_kubernetes_auth():

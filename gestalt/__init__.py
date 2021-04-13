@@ -183,12 +183,14 @@ class Gestalt:
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
 
-        if len(self.__vault_paths) > 0:
-            print("Fetching secrets from VAULT")
-            for vault_secret_path in self.__vault_paths:
-                secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
-                    path=vault_secret_path)
-                self.__conf_data.update(secret_token['data']['data'])
+        if len(self.__vault_paths <= 0):
+            return
+
+        print("Fetching secrets from VAULT")
+        for vault_secret_path in self.__vault_paths:
+            secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
+                path=vault_secret_path)
+            self.__conf_data.update(secret_token['data']['data'])
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
