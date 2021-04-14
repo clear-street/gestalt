@@ -1,7 +1,7 @@
 import os
 import glob
 import json
-import hvac
+import hvac  # type: ignore
 import collections.abc as collections
 from typing import Dict, List, Tuple, Type, Union, Optional, MutableMapping, Text, Any, TypedDict, NamedTuple
 import yaml
