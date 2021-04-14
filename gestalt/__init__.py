@@ -1,10 +1,15 @@
 import os
 import glob
+import sys
 import json
 import hvac  # type: ignore
 import collections.abc as collections
-from typing import Dict, List, Tuple, Type, Union, Optional, MutableMapping, Text, Any, TypedDict, NamedTuple
+from typing import Dict, List, Tuple, Type, Union, Optional, MutableMapping, Text, Any, NamedTuple
 import yaml
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
 
 
 class CACertClient(NamedTuple):
