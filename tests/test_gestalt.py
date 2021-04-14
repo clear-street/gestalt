@@ -473,7 +473,5 @@ def test_vault_get():
     CLIENT_ID = "test_client"
     g.add_vault_secret_path(CLIENT_ID, "test")
     g.build_config()
-    config = g.dump()
-    print(config)
     secret = g.get_string(CLIENT_ID)
     assert secret == 'test_client_password'
