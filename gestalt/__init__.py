@@ -127,6 +127,17 @@ class Gestalt:
             raise ValueError(f'Given file path of {tmp} is not a file')
         self.__conf_files.append(tmp)
 
+    def __fetch_secrets_from_vault(self) -> None:
+
+        if len(self.__vault_paths) <= 0:
+            return
+        print("Fetching secrets from VAULT")
+        for vault_secret_path in self.__vault_paths:
+            secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
+                path=vault_secret_path)
+            self.__conf_vault.update(secret_token['data']['data'])
+            self.__conf_data.update(secret_token['data']['data'])
+
     def build_config(self) -> None:
         """Renders all configuration paths into the internal data structure.
         It fetches any secrets available in vault as well and updates the
@@ -183,14 +194,7 @@ class Gestalt:
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
 
-        if len(self.__vault_paths <= 0):
-            return
-
-        print("Fetching secrets from VAULT")
-        for vault_secret_path in self.__vault_paths:
-            secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
-                path=vault_secret_path)
-            self.__conf_data.update(secret_token['data']['data'])
+        self.__fetch_secrets_from_vault()
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
@@ -422,13 +426,6 @@ class Gestalt:
             if not isinstance(val, t):
                 raise TypeError(
                     f'Given default set key is not of type {t}, but of type {type(val)}'
-                )
-            return val
-        if key in self.__conf_vault:
-            val = self.__conf_vault[key]
-            if not isinstance(val, t):
-                raise TypeError(
-                    f'Given vault set key is not type {t}, but of type {type(val)}'
                 )
             return val
         raise ValueError(
