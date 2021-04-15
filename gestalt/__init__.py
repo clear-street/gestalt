@@ -602,7 +602,7 @@ class Gestalt:
             self.__authenticate_vault_client(auth_config['role'],
                                              auth_config['jwt'])
 
-    def add_vault_secret_path(self, key: str, path: str) -> None:
+    def add_vault_secret_path(self, path: str) -> None:
         """Adds a vault secret with key and path to gestalt
 
         Args:
