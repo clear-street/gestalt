@@ -471,7 +471,7 @@ def test_vault_get():
     g.add_vault_config_provider(client_config, auth_config=None)
     print("Requires the user to set a token in the client")
     CLIENT_ID = "test_client"
-    g.add_vault_secret_path(CLIENT_ID, "test")
+    g.add_vault_secret_path("test")
     g.build_config()
     secret = g.get_string(CLIENT_ID)
     assert secret == 'test_client_password'
