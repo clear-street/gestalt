@@ -1,9 +1,32 @@
 import os
 import glob
+import sys
 import json
+import hvac  # type: ignore
 import collections.abc as collections
-from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
+from typing import Dict, List, Tuple, Type, Union, Optional, MutableMapping, Text, Any, NamedTuple
 import yaml
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
+
+
+class CACertClient(NamedTuple):
+    client_cert_path: str
+    client_key_path: str
+
+
+class HVAC_ClientConfig(TypedDict):
+    url: str
+    token: str
+    cert: Union[None, CACertClient]
+    verify: Union[None, bool]
+
+
+class HVAC_ClientAuthentication(TypedDict):
+    role: str
+    jwt: str
 
 
 class Gestalt:
@@ -30,6 +53,9 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
+        self.__conf_vault: Dict[Text, Union[Text, List[Any], int, bool,
+                                            float]] = dict()
+        self.__vault_paths: List[str] = []
 
     def __flatten(
         self,
@@ -70,6 +96,19 @@ class Gestalt:
                 f'Given directory path of {tmp} is not a directory')
         self.__conf_file_paths.append(tmp)
 
+    def __init_vault_client(self, url: str, token: str,
+                            cert: Union[Tuple[str, str], None],
+                            verify: Union[bool, str]) -> None:
+        self.vault_client: hvac.Client = hvac.Client(
+            url=url,
+            token=token,
+            cert=cert,
+            verify=verify,
+        )
+
+    def __authenticate_vault_client(self, role: str, jwt: str) -> None:
+        self.vault_client.auth_kubernetes(role=role, jwt=jwt)
+
     def add_config_file(self, path: str) -> None:
         """Adds a path to a single file to read configs from
 
@@ -93,8 +132,21 @@ class Gestalt:
             raise ValueError(f'Given file path of {tmp} is not a file')
         self.__conf_files.append(tmp)
 
+    def __fetch_secrets_from_vault(self) -> None:
+
+        if len(self.__vault_paths) <= 0:
+            return
+        print("Fetching secrets from VAULT")
+        for vault_secret_path in self.__vault_paths:
+            secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
+                path=vault_secret_path)
+            self.__conf_vault.update(secret_token['data']['data'])
+            self.__conf_data.update(secret_token['data']['data'])
+
     def build_config(self) -> None:
-        """Renders all configuration paths into the internal data structure
+        """Renders all configuration paths into the internal data structure.
+        It fetches any secrets available in vault as well and updates the
+        internal data structure.
 
         This does not affect if environment variables are used, it just deals
         with the files that need to be loaded.
@@ -146,6 +198,8 @@ class Gestalt:
 
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
+
+        self.__fetch_secrets_from_vault()
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
@@ -518,3 +572,41 @@ class Gestalt:
         ret.update(self.__conf_data)
         ret.update(self.__conf_sets)
         return str(json.dumps(ret, indent=4))
+
+    def add_vault_config_provider(
+            self, client_config: HVAC_ClientConfig,
+            auth_config: Optional[HVAC_ClientAuthentication]) -> None:
+        """Initialized vault client and authenticates vault
+
+        Args:
+            client_config (HVAC_ClientConfig): initializes vault. URL can be set in VAULT_ADDR
+                environment variable, token can be set to VAULT_TOKEN environment variable.
+                These will be picked by default if not set to empty string
+            auth_config (HVAC_ClientAuthentication): authenticates the initialized vault client
+                with role and jwt string from kubernetes
+        """
+        if client_config['url'] == "":
+            client_config['url'] = os.environ["VAULT_ADDR"]
+        if client_config['token'] == "":
+            client_config['token'] == os.environ["VAULT_TOKEN"]
+        if client_config['verify']:
+            verify = True
+        else:
+            verify = False
+        self.__init_vault_client(client_config['url'],
+                                 client_config['token'],
+                                 client_config['cert'],
+                                 verify=verify)
+
+        if auth_config:
+            self.__authenticate_vault_client(auth_config['role'],
+                                             auth_config['jwt'])
+
+    def add_vault_secret_path(self, path: str) -> None:
+        """Adds a vault secret with key and path to gestalt
+
+        Args:
+            key (str): The key by which the secret is made available in configuration
+            path (str): The path to the secret in vault cluster
+        """
+        self.__vault_paths.append(path)

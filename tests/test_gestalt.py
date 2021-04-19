@@ -3,6 +3,8 @@
 import pytest
 import os
 import gestalt
+import hvac
+import requests
 
 
 # Testing JSON Loading
@@ -419,3 +421,57 @@ def test_set_default_bad_type_set_config():
     with pytest.raises(TypeError) as terr:
         g.set_default_int('mykey', 123)
         assert 'Set config has' in terr
+
+
+def test_vault_setup():
+    g = gestalt.Gestalt()
+    client_config = gestalt.HVAC_ClientConfig()
+    client_config['url'] = ""
+    client_config['token'] = "myroot"
+    client_config['cert'] = None
+    client_config['verify'] = True
+    g.add_vault_config_provider(client_config, auth_config=None)
+    assert g.vault_client.is_authenticated()
+
+
+def test_vault_fail_setup():
+    g = gestalt.Gestalt()
+    client_config = gestalt.HVAC_ClientConfig()
+    client_config['url'] = "failed_url"
+    client_config['token'] = "random_token"
+    client_config['cert'] = None
+    client_config['verify'] = True
+    g.add_vault_config_provider(client_config, auth_config=None)
+    with pytest.raises(requests.exceptions.MissingSchema):
+        g.vault_client.is_authenticated()
+
+
+def test_vault_fail_kubernetes_auth():
+    g = gestalt.Gestalt()
+    client_config = gestalt.HVAC_ClientConfig()
+    client_config = gestalt.HVAC_ClientConfig()
+    client_config['url'] = ""
+    client_config['token'] = ""
+    client_config['cert'] = None
+    client_config['verify'] = True
+    auth_config = gestalt.HVAC_ClientAuthentication()
+    auth_config['role'] = "random_role"
+    auth_config['jwt'] = "random_jwt"
+    with pytest.raises(hvac.exceptions.InvalidRequest):
+        g.add_vault_config_provider(client_config, auth_config)
+
+
+def test_vault_get():
+    g = gestalt.Gestalt()
+    client_config = gestalt.HVAC_ClientConfig()
+    client_config['url'] = ""
+    client_config['token'] = "myroot"
+    client_config['cert'] = None
+    client_config['verify'] = True
+    g.add_vault_config_provider(client_config, auth_config=None)
+    print("Requires the user to set a token in the client")
+    CLIENT_ID = "test_client"
+    g.add_vault_secret_path("test")
+    g.build_config()
+    secret = g.get_string(CLIENT_ID)
+    assert secret == 'test_client_password'
