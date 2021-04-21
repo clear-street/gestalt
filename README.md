@@ -232,3 +232,20 @@ The `get` function will raise `TypeError`s in the following cases:
 1. The key is not a string
 2. The default value does not match the desired type
 3. The configuration has the key with a value of type `a`, when the user desires a value of type `b`
+
+#### Working with Vault
+
+To work with vault, connect gestalt with your vault cluster using:
+
+```python
+g.add_vault_config_provider(vault_config, authentication_config)
+```
+
+1. The `vault_config` is a dictionary requiring url, and token
+2. The `authentication_config` is a dictionary with Kubernetes `role` and `jwt`
+
+Next, add a path to the secret for Vault to access the cluster which loads it into the running
+internal data structure configuration
+
+```python
+g.add_vault_secret_path('path')
