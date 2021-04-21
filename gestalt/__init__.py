@@ -53,8 +53,6 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
-        self.__conf_vault: Dict[Text, Union[Text, List[Any], int, bool,
-                                            float]] = dict()
         self.__vault_paths: List[str] = []
 
     def __flatten(
@@ -140,7 +138,6 @@ class Gestalt:
         for vault_secret_path in self.__vault_paths:
             secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
                 path=vault_secret_path)
-            self.__conf_vault.update(secret_token['data']['data'])
             self.__conf_data.update(secret_token['data']['data'])
 
     def build_config(self) -> None:
@@ -588,7 +585,7 @@ class Gestalt:
         if client_config['url'] == "":
             client_config['url'] = os.environ["VAULT_ADDR"]
         if client_config['token'] == "":
-            client_config['token'] == os.environ["VAULT_TOKEN"]
+            client_config['token'] == os.environ.get("VAULT_TOKEN", "")
         if client_config['verify']:
             verify = True
         else:
