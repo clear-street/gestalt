@@ -585,7 +585,7 @@ class Gestalt:
         if client_config['url'] == "":
             client_config['url'] = os.environ["VAULT_ADDR"]
         if client_config['token'] == "":
-            client_config['token'] == os.environ.get("VAULT_TOKEN")
+            client_config['token'] == os.environ.get("VAULT_TOKEN", "")
         if client_config['verify']:
             verify = True
         else:
