@@ -53,7 +53,7 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
-        self.__vault_paths: List[str] = []
+        self.__vault_paths: List[Tuple[str, str]] = []
 
     def __flatten(
         self,
@@ -138,8 +138,7 @@ class Gestalt:
         for vault_mount_path, vault_secret_path in self.__vault_paths:
 
             secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
-                mount_point=vault_mount_path,
-                path=vault_secret_path)
+                mount_point=vault_mount_path, path=vault_secret_path)
             self.__conf_data.update(secret_token['data']['data'])
 
     def build_config(self) -> None:
@@ -601,7 +600,9 @@ class Gestalt:
             self.__authenticate_vault_client(auth_config['role'],
                                              auth_config['jwt'])
 
-    def add_vault_secret_path(self, path: str, mount_point: str = "secret") -> None:
+    def add_vault_secret_path(self,
+                              path: str,
+                              mount_point: str = "secret") -> None:
         """Adds a vault secret with key and path to gestalt
 
         Args:
