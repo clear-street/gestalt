@@ -135,8 +135,10 @@ class Gestalt:
         if len(self.__vault_paths) <= 0:
             return
         print("Fetching secrets from VAULT")
-        for vault_secret_path in self.__vault_paths:
+        for vault_mount_path, vault_secret_path in self.__vault_paths:
+
             secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
+                mount_point=vault_mount_path,
                 path=vault_secret_path)
             self.__conf_data.update(secret_token['data']['data'])
 
@@ -599,11 +601,11 @@ class Gestalt:
             self.__authenticate_vault_client(auth_config['role'],
                                              auth_config['jwt'])
 
-    def add_vault_secret_path(self, path: str) -> None:
+    def add_vault_secret_path(self, path: str, mount_point: str = "secret") -> None:
         """Adds a vault secret with key and path to gestalt
 
         Args:
             key (str): The key by which the secret is made available in configuration
             path (str): The path to the secret in vault cluster
         """
-        self.__vault_paths.append(path)
+        self.__vault_paths.append((mount_point, path))
