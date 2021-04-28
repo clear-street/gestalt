@@ -463,13 +463,14 @@ def test_vault_fail_setup():
 
 def test_vault_fail_kubernetes_auth():
     g = gestalt.Gestalt()
-    setup_vault_config(g, kubernetes_auth=True)
     client_config = gestalt.HVAC_ClientConfig()
     client_config['url'] = ""
     client_config['token'] = ""
     client_config['cert'] = None
     client_config['verify'] = True
-    auth_config = None
+    auth_config = gestalt.HVAC_ClientAuthentication()
+    auth_config['role'] = "random_role"
+    auth_config['jwt'] = "random_jwt"
     with pytest.raises(hvac.exceptions.InvalidRequest):
         g.add_vault_config_provider(client_config, auth_config)
 
