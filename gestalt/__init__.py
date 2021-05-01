@@ -598,7 +598,7 @@ class Gestalt:
         if len(self.__vault_paths) <= 0:
             return
         print("Fetching secrets from VAULT")
-        for vault_mount_path, vault_secret_path in self.__vault_paths:
+        for vault_secret_path in self.__vault_paths:
             secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
-                mount_point=vault_mount_path, path=vault_secret_path)
+                path=vault_secret_path)
             self.__conf_data.update(secret_token['data']['data'])
