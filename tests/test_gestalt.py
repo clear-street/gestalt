@@ -463,6 +463,7 @@ def test_vault_fail_kubernetes_auth():
 
 def test_vault_get():
     g = gestalt.Gestalt()
+    g.build_config()
     client_config = gestalt.HVAC_ClientConfig()
     client_config['url'] = ""
     client_config['token'] = "myroot"
@@ -472,6 +473,6 @@ def test_vault_get():
     print("Requires the user to set a token in the client")
     CLIENT_ID = "test_client"
     g.add_vault_secret_path("test")
-    g.build_config()
+    g.fetch_vault_secrets()
     secret = g.get_string(CLIENT_ID)
     assert secret == 'test_client_password'
