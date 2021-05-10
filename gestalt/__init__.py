@@ -130,20 +130,8 @@ class Gestalt:
             raise ValueError(f'Given file path of {tmp} is not a file')
         self.__conf_files.append(tmp)
 
-    def __fetch_secrets_from_vault(self) -> None:
-
-        if len(self.__vault_paths) <= 0:
-            return
-        print("Fetching secrets from VAULT")
-        for vault_secret_path in self.__vault_paths:
-            secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
-                path=vault_secret_path)
-            self.__conf_data.update(secret_token['data']['data'])
-
     def build_config(self) -> None:
         """Renders all configuration paths into the internal data structure.
-        It fetches any secrets available in vault as well and updates the
-        internal data structure.
 
         This does not affect if environment variables are used, it just deals
         with the files that need to be loaded.
@@ -195,8 +183,6 @@ class Gestalt:
 
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
-
-        self.__fetch_secrets_from_vault()
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
@@ -607,3 +593,12 @@ class Gestalt:
             path (str): The path to the secret in vault cluster
         """
         self.__vault_paths.append(path)
+
+    def fetch_vault_secrets(self) -> None:
+        if len(self.__vault_paths) <= 0:
+            return
+        print("Fetching secrets from VAULT")
+        for vault_secret_path in self.__vault_paths:
+            secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
+                path=vault_secret_path)
+            self.__conf_data.update(secret_token['data']['data'])
