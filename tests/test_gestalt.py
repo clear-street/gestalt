@@ -7,21 +7,6 @@ import hvac
 import requests
 
 
-def setup_vault_config(g: gestalt.Gestalt, kubernetes_auth: bool = False):
-    client_config = gestalt.HVAC_ClientConfig()
-    client_config['url'] = ""
-    client_config['token'] = "myroot"
-    client_config['cert'] = None
-    client_config['verify'] = True
-    auth_config = None
-    if kubernetes_auth:
-        auth_config = gestalt.HVAC_ClientAuthentication()
-        auth_config['role'] = "random_role"
-        auth_config['jwt'] = "random_jwt"
-    g.add_vault_config_provider(client_config, auth_config)
-    print("Requires the user to set a token in the client")
-
-
 # Testing JSON Loading
 def test_loading_json():
     g = gestalt.Gestalt()
@@ -477,10 +462,17 @@ def test_vault_fail_kubernetes_auth():
 
 def test_vault_get():
     g = gestalt.Gestalt()
-    setup_vault_config(g, kubernetes_auth=False)
+    g.build_config()
+    client_config = gestalt.HVAC_ClientConfig()
+    client_config['url'] = ""
+    client_config['token'] = "myroot"
+    client_config['cert'] = None
+    client_config['verify'] = True
+    g.add_vault_config_provider(client_config, auth_config=None)
+    print("Requires the user to set a token in the client")
     CLIENT_ID = "test_client"
     g.add_vault_secret_path("test")
-    g.build_config()
+    g.fetch_vault_secrets()
     secret = g.get_string(CLIENT_ID)
     assert secret == 'test_client_password'
 
