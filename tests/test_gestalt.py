@@ -470,8 +470,8 @@ def test_vault_get():
     client_config['verify'] = True
     g.add_vault_config_provider(client_config, auth_config=None)
     print("Requires the user to set a token in the client")
-    client_id = "test"
-    client_password = "test"
+    client_id = "test_client"
+    client_password = "test_client_password"
     g.add_vault_secret_path(path="test")
     g.fetch_vault_secrets()
     secret = g.get_string(client_id)

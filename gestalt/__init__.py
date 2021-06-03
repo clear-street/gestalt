@@ -608,7 +608,6 @@ class Gestalt:
         for vault_path in self.__vault_paths:
             mount_path = str(vault_path[0])
             secret_path = vault_path[1]
-            print(mount_path)
             secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
                 mount_point=str(mount_path),
                 path=secret_path)
