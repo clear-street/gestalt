@@ -470,19 +470,27 @@ def test_vault_get():
     client_config['verify'] = True
     g.add_vault_config_provider(client_config, auth_config=None)
     print("Requires the user to set a token in the client")
-    CLIENT_ID = "test_client"
-    g.add_vault_secret_path("test")
+    client_id = "test"
+    client_password = "test"
+    g.add_vault_secret_path(path="test/test")
     g.fetch_vault_secrets()
-    secret = g.get_string(CLIENT_ID)
-    assert secret == 'test_client_password'
+    secret = g.get_string(client_id)
+    assert secret == client_password
 
 
 def test_vault_mount_path():
     g = gestalt.Gestalt()
-    setup_vault_config(g, kubernetes_auth=False)
-    CLIENT_ID = "test_client"
-    mount_path = "test_mount"
-    g.add_vault_secret_path("tests", mount_path)
     g.build_config()
-    secret = g.get_string(CLIENT_ID)
-    assert secret == "test_client_password"
+    client_config = gestalt.HVAC_ClientConfig()
+    client_config['url'] = ""
+    client_config['token'] = "myroot"
+    client_config['cert'] = None
+    client_config['verify'] = True
+    g.add_vault_config_provider(client_config, auth_config=None)
+    print("Requires the user to set a token in the client")
+    client_id_mount_path = "test"
+    client_password_mount_path = "test"
+    g.add_vault_secret_path("test/test", mount_path="testing")
+    g.fetch_vault_secrets()
+    secret = g.get_string(client_id_mount_path)
+    assert secret == client_password_mount_path

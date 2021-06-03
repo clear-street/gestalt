@@ -50,8 +50,8 @@ jobs:
         VAULT_CONTAINER_ID="$(docker ps -aqf "name=vault-test")"
         docker exec ${VAULT_CONTAINER_ID} vault login myroot
         docker exec ${VAULT_CONTAINER_ID} vault kv put secret/test test_client=test_client_password 
-        docker exec ${VAULT_CONTAINER_ID} vault secrets enable -path=test_mount kv
-        docker exec ${VAULT_CONTAINER_ID} vault kv put test_mount/test test_client=test_client_password
+        docker exec ${VAULT_CONTAINER_ID} vault secrets enable -path=testing kv-v2
+        docker exec ${VAULT_CONTAINER_ID} vault kv put test/test test=test
     - name: Test with pytest
       env:
         CODECOV_TOKEN: ${{ secrets.CODE_COV_TOKEN }}

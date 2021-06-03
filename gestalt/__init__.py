@@ -53,7 +53,7 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
-        self.__vault_paths: List[Tuple[str, str]] = []
+        self.__vault_paths: List[Tuple[Union[str, None], str]] = []
 
     def __flatten(
         self,
@@ -587,7 +587,7 @@ class Gestalt:
 
     def add_vault_secret_path(self,
                               path: str,
-                              mount_path=Optional[str]) -> None:
+                              mount_path: Optional[str] = None) -> None:
         """Adds a vault secret with key and path to gestalt
 
         Args:
@@ -595,6 +595,8 @@ class Gestalt:
             mount_path ([type], optional): The mount_path for a non-default secret
                 mount. Defaults to Optional[str].
         """
+        mount_path = mount_path if mount_path != None else "secret"
+
         self.__vault_paths.append((mount_path, path))
 
     def fetch_vault_secrets(self) -> None:
@@ -604,9 +606,11 @@ class Gestalt:
             return
         print("Fetching secrets from VAULT")
         for vault_path in self.__vault_paths:
-            mount_path = vault_path[0] if vault_path[0] else "secrets"
+            mount_path = str(vault_path[0])
             secret_path = vault_path[1]
+            print(mount_path)
             secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
-                mount_path=mount_path,
+                mount_point=str(mount_path),
                 path=secret_path)
+            print(secret_token)
             self.__conf_data.update(secret_token['data']['data'])
