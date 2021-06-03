@@ -612,5 +612,4 @@ class Gestalt:
             secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
                 mount_point=str(mount_path),
                 path=secret_path)
-            print(secret_token)
             self.__conf_data.update(secret_token['data']['data'])

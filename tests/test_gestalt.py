@@ -488,8 +488,8 @@ def test_vault_mount_path():
     client_config['verify'] = True
     g.add_vault_config_provider(client_config, auth_config=None)
     print("Requires the user to set a token in the client")
-    client_id_mount_path = "test"
-    client_password_mount_path = "test"
+    client_id_mount_path = "test_mount"
+    client_password_mount_path = "test_mount_password"
     g.add_vault_secret_path("test", mount_path="test-mount")
     g.fetch_vault_secrets()
     secret = g.get_string(client_id_mount_path)
