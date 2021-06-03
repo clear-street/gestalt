@@ -472,7 +472,7 @@ def test_vault_get():
     print("Requires the user to set a token in the client")
     client_id = "test"
     client_password = "test"
-    g.add_vault_secret_path(path="test/test")
+    g.add_vault_secret_path(path="test")
     g.fetch_vault_secrets()
     secret = g.get_string(client_id)
     assert secret == client_password
