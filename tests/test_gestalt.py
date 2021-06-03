@@ -490,7 +490,7 @@ def test_vault_mount_path():
     print("Requires the user to set a token in the client")
     client_id_mount_path = "test"
     client_password_mount_path = "test"
-    g.add_vault_secret_path("test/test", mount_path="testing")
+    g.add_vault_secret_path("test", mount_path="test-mount")
     g.fetch_vault_secrets()
     secret = g.get_string(client_id_mount_path)
     assert secret == client_password_mount_path
