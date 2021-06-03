@@ -53,7 +53,7 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
-        self.__vault_paths: List[str] = []
+        self.__vault_paths: List[Tuple[Union[str, None], str]] = []
 
     def __flatten(
         self,
@@ -585,20 +585,29 @@ class Gestalt:
             self.__authenticate_vault_client(auth_config['role'],
                                              auth_config['jwt'])
 
-    def add_vault_secret_path(self, path: str) -> None:
+    def add_vault_secret_path(self,
+                              path: str,
+                              mount_path: Optional[str] = None) -> None:
         """Adds a vault secret with key and path to gestalt
 
         Args:
-            key (str): The key by which the secret is made available in configuration
             path (str): The path to the secret in vault cluster
+            mount_path ([type], optional): The mount_path for a non-default secret
+                mount. Defaults to Optional[str].
         """
-        self.__vault_paths.append(path)
+        mount_path = mount_path if mount_path != None else "secret"
+
+        self.__vault_paths.append((mount_path, path))
 
     def fetch_vault_secrets(self) -> None:
+        """Fetches client secrets from vault first checks the path provided 
+        """
         if len(self.__vault_paths) <= 0:
             return
         print("Fetching secrets from VAULT")
-        for vault_secret_path in self.__vault_paths:
+        for vault_path in self.__vault_paths:
+            mount_path = str(vault_path[0])
+            secret_path = vault_path[1]
             secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
-                path=vault_secret_path)
+                mount_point=str(mount_path), path=secret_path)
             self.__conf_data.update(secret_token['data']['data'])
