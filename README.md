@@ -244,8 +244,12 @@ g.add_vault_config_provider(vault_config, authentication_config)
 1. The `vault_config` is a dictionary requiring url, and token
 2. The `authentication_config` is a dictionary with Kubernetes `role` and `jwt`
 
-Next, add a path to the secret for Vault to access the cluster which loads it into the running
-internal data structure configuration
+Second, add a path to the secret for Vault to access the cluster which loads it into the running
+internal data structure configuration. The function `add_vault_secret_path` can consume a
+mount point which, if not provided is set to defualt value.
 
 ```python
-g.add_vault_secret_path('path')
+g.add_vault_secret_path(path="your-secret-pat", mount_path="mount-point")
+```
+
+Lastly, use the `fetch_vault_secret` function to fetch the secrets from your vault cluster.
