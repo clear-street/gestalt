@@ -6,8 +6,6 @@
 
 Gestalt is an opinionated, strongly typed, configuration library for Python 3.6+. Gestalt aims to simplify configuration loading, getting/setting, and management by letting the user focus on writing programs, and letting Gestalt check configuration types, location, and environment variable overrides.
 
-
-
 ## Install
 
 ```python
@@ -191,11 +189,13 @@ To set a default configuration value programmatically:
 ```python
 g.set_defualt_string('some.default.k', 'default value')
 ```
+
 Defined by the function signature
 
 ```python
 set_default_string(key: str, value: str) -> None
 ```
+
 The same applies to the remaining types that Gestalt supports:
 
 ```python
@@ -244,6 +244,8 @@ g.add_vault_config_provider(vault_config, authentication_config)
 1. The `vault_config` is a dictionary requiring url, and token
 2. The `authentication_config` is a dictionary with Kubernetes `role` and `jwt`
 
+Raises RuntimeError if the VAULT_ADDR is not set or set incorrectly, or TypeError when client_config is empty.
+
 Second, add a path to the secret for Vault to access the cluster which loads it into the running
 internal data structure configuration. The function `add_vault_secret_path` can consume a
 mount point which, if not provided is set to defualt value.
@@ -253,3 +255,5 @@ g.add_vault_secret_path(path="your-secret-pat", mount_path="mount-point")
 ```
 
 Lastly, use the `fetch_vault_secret` function to fetch the secrets from your vault cluster.
+
+Raises a RuntimeError, if the path provided in `add_vault_secret_path` is invalid or the mount is invalid
