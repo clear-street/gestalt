@@ -2,6 +2,7 @@ import os
 import glob
 import sys
 import json
+import requests
 import hvac  # type: ignore
 import collections.abc as collections
 from typing import Dict, List, Tuple, Type, Union, Optional, MutableMapping, Text, Any, NamedTuple
@@ -18,7 +19,7 @@ class CACertClient(NamedTuple):
 
 
 class HVAC_ClientConfig(TypedDict):
-    url: str
+    url: Optional[str]
     token: str
     cert: Union[None, CACertClient]
     verify: Union[None, bool]
@@ -93,19 +94,6 @@ class Gestalt:
             raise ValueError(
                 f'Given directory path of {tmp} is not a directory')
         self.__conf_file_paths.append(tmp)
-
-    def __init_vault_client(self, url: str, token: str,
-                            cert: Union[Tuple[str, str], None],
-                            verify: Union[bool, str]) -> None:
-        self.vault_client: hvac.Client = hvac.Client(
-            url=url,
-            token=token,
-            cert=cert,
-            verify=verify,
-        )
-
-    def __authenticate_vault_client(self, role: str, jwt: str) -> None:
-        self.vault_client.auth_kubernetes(role=role, jwt=jwt)
 
     def add_config_file(self, path: str) -> None:
         """Adds a path to a single file to read configs from
@@ -568,22 +556,34 @@ class Gestalt:
             auth_config (HVAC_ClientAuthentication): authenticates the initialized vault client
                 with role and jwt string from kubernetes
         """
-        if client_config['url'] == "":
-            client_config['url'] = os.environ["VAULT_ADDR"]
+        if bool(client_config) == False:
+            raise TypeError("Gestalt Error: client config is empty for Vault")
+        client_config['url'] = os.environ.get("VAULT_ADDR")
+        print(client_config)
+        if not client_config['url']:
+            raise RuntimeError('Gestalt Error: VAULT_ADDR is missing')
         if client_config['token'] == "":
             client_config['token'] == os.environ.get("VAULT_TOKEN", "")
         if client_config['verify']:
             verify = True
         else:
             verify = False
-        self.__init_vault_client(client_config['url'],
-                                 client_config['token'],
-                                 client_config['cert'],
-                                 verify=verify)
+
+        self.vault_client: hvac.Client = hvac.Client(client_config['url'],
+                                                     client_config['token'],
+                                                     client_config['cert'],
+                                                     verify=verify)
 
         if auth_config:
-            self.__authenticate_vault_client(auth_config['role'],
-                                             auth_config['jwt'])
+            try:
+                self.vault_client.auth_kubernetes(\
+                    role=auth_config['role'],
+                    jwt=auth_config['jwt']
+                )
+            except requests.exceptions.ConnectionError as err:
+                print(
+                    "Gestalt Error: Couldn't connect to Vault. Maybe missing VAULT_ADDR?"
+                )
 
     def add_vault_secret_path(self,
                               path: str,
@@ -608,6 +608,14 @@ class Gestalt:
         for vault_path in self.__vault_paths:
             mount_path = str(vault_path[0])
             secret_path = vault_path[1]
-            secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
-                mount_point=str(mount_path), path=secret_path)
-            self.__conf_data.update(secret_token['data']['data'])
+            try:
+                secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
+                    mount_point=str(mount_path), path=secret_path)
+                self.__conf_data.update(secret_token['data']['data'])
+            except hvac.exceptions.InvalidPath as err:
+                raise RuntimeError(
+                    "Gestalt Error: The secret path or mount is set incorrectly"
+                )
+            except requests.exceptions.ConnectionError as err:
+                raise RuntimeError(
+                    "Gestalt Error: Gestalt couldn't connect to Vault")

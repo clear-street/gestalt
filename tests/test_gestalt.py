@@ -423,7 +423,13 @@ def test_set_default_bad_type_set_config():
         assert 'Set config has' in terr
 
 
-def test_vault_setup():
+## Vault testing
+@pytest.fixture
+def user_setup():
+    os.environ['VAULT_ADDR'] = "http://localhost:8200"
+
+
+def test_vault_setup(user_setup):
     g = gestalt.Gestalt()
     client_config = gestalt.HVAC_ClientConfig()
     client_config['url'] = ""
@@ -442,8 +448,15 @@ def test_vault_fail_setup():
     client_config['cert'] = None
     client_config['verify'] = True
     g.add_vault_config_provider(client_config, auth_config=None)
-    with pytest.raises(requests.exceptions.MissingSchema):
-        g.vault_client.is_authenticated()
+    assert g.vault_client.is_authenticated() == False
+
+
+def test_vault_connection_error():
+    g = gestalt.Gestalt()
+    client_config = gestalt.HVAC_ClientConfig()
+    with pytest.raises(TypeError):
+        g.add_vault_config_provider(client_config=client_config,
+                                    auth_config=None)
 
 
 def test_vault_fail_kubernetes_auth():
@@ -461,6 +474,7 @@ def test_vault_fail_kubernetes_auth():
 
 
 def test_vault_get():
+    print("If this test fails, please makes sure Vault is running locally")
     g = gestalt.Gestalt()
     g.build_config()
     client_config = gestalt.HVAC_ClientConfig()
@@ -476,6 +490,23 @@ def test_vault_get():
     g.fetch_vault_secrets()
     secret = g.get_string(client_id)
     assert secret == client_password
+
+
+def test_vault_incorrect_path():
+    g = gestalt.Gestalt()
+    g.build_config()
+    client_config = gestalt.HVAC_ClientConfig()
+    client_config['url'] = ""
+    client_config['token'] = "myroot"
+    client_config['cert'] = None
+    client_config['verify'] = True
+    g.add_vault_config_provider(client_config, auth_config=None)
+    print("Requires the user to set a token in the client")
+    client_id = "random_client"
+    client_password = "random_password"
+    g.add_vault_secret_path(path="random_path")
+    with pytest.raises(RuntimeError):
+        g.fetch_vault_secrets()
 
 
 def test_vault_mount_path():
@@ -494,3 +525,20 @@ def test_vault_mount_path():
     g.fetch_vault_secrets()
     secret = g.get_string(client_id_mount_path)
     assert secret == client_password_mount_path
+
+
+def test_vault_incorrect_mount_path():
+    g = gestalt.Gestalt()
+    g.build_config()
+    client_config = gestalt.HVAC_ClientConfig()
+    client_config['url'] = ""
+    client_config['token'] = "myroot"
+    client_config['cert'] = None
+    client_config['verify'] = True
+    g.add_vault_config_provider(client_config, auth_config=None)
+    print("Requires the user to set a token in the client")
+    client_id_mount_path = "random_test_mount"
+    client_password_mount_path = "random_test_mount_password"
+    g.add_vault_secret_path("test", mount_path="incorrect-mount-point")
+    with pytest.raises(RuntimeError):
+        g.fetch_vault_secrets()
