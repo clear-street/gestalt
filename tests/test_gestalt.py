@@ -476,11 +476,10 @@ def test_vault_fail_kubernetes_auth():
 @pytest.fixture(scope="function")
 def secret_setup():
     client_password: str = "test_client_password"
-    vault_client = hvac.Client(url=os.environ['VAULT_ADDR'], token=os.environ['VAULT_TOKEN'])
+    vault_client = hvac.Client(url=os.environ['VAULT_ADDR'],
+                               token=os.environ['VAULT_TOKEN'])
     vault_client.secrets.kv.v2.create_or_update_secret(
-        path="test",
-        secret=dict(test_client=client_password)
-    )
+        path="test", secret=dict(test_client=client_password))
 
 
 def test_vault_get(secret_setup):
@@ -530,7 +529,6 @@ def test_vault_incorrect_path():
 #         path="test",
 #         secret=dict(test_mount=client_mount_password)
 #     )
-
 
 # def test_vault_mount_path(secret_mount_setup):
 #     g = gestalt.Gestalt()

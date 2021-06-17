@@ -32,7 +32,6 @@ class HVAC_ClientAuthentication(TypedDict):
     jwt: str
 
 
-
 class Gestalt:
     def __init__(self) -> None:
         """ Creates the default configuration manager
@@ -60,10 +59,8 @@ class Gestalt:
         self.__vault_paths: List[Tuple[Union[str, None], str]] = []
         self.secret_ttl_identifier: List[Tuple[str, int, float]] = []
         self.TTL_RENEW_INCREMENT: int = 300
-
         # self.ttl_renew_thread = threading.Thread(name='ttl-renew', target=self.ttl_expire_check)
         # self.ttl_renew_thread.run()
-
 
     def __flatten(
         self,
@@ -622,8 +619,7 @@ class Gestalt:
                 print(secret_token)
                 self.__conf_data.update(secret_token['data']['data'])
                 secret_lease = (secret_token['lease_id'],
-                                secret_token['lease_duration'],
-                                time.time())
+                                secret_token['lease_duration'], time.time())
                 self.secret_ttl_identifier.append(secret_lease)
             except hvac.exceptions.InvalidPath as err:
                 raise RuntimeError(
@@ -634,11 +630,9 @@ class Gestalt:
                     "Gestalt Error: Gestalt couldn't connect to Vault")
 
     def ttl_expire_check(self) -> None:
-        while(True):
+        while (True):
             for lease in self.secret_ttl_identifier:
                 if lease[2] - time.time() <= 0.667 * lease[1]:
                     self.vault_client.sys.renew_lease(
-                        lease_id=lease[0],
-                        increment=self.TTL_RENEW_INCREMENT
-                    )
+                        lease_id=lease[0], increment=self.TTL_RENEW_INCREMENT)
             time.sleep(300)
