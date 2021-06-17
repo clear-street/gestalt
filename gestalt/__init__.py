@@ -61,8 +61,9 @@ class Gestalt:
         self.secret_ttl_identifier: List[Tuple[str, int, float]] = []
         self.TTL_RENEW_INCREMENT: int = 300
 
-        self.ttl_renew_thread = threading.Thread(name='ttl-renew', target=self.ttl_expire_check)
-        self.ttl_renew_thread.run()
+        # self.ttl_renew_thread = threading.Thread(name='ttl-renew', target=self.ttl_expire_check)
+        # self.ttl_renew_thread.run()
+
 
     def __flatten(
         self,
