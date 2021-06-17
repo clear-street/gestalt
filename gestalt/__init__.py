@@ -3,6 +3,8 @@ import glob
 import sys
 import json
 import requests
+import time
+import threading
 import hvac  # type: ignore
 import collections.abc as collections
 from typing import Dict, List, Tuple, Type, Union, Optional, MutableMapping, Text, Any, NamedTuple
@@ -30,6 +32,7 @@ class HVAC_ClientAuthentication(TypedDict):
     jwt: str
 
 
+
 class Gestalt:
     def __init__(self) -> None:
         """ Creates the default configuration manager
@@ -55,6 +58,11 @@ class Gestalt:
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
         self.__vault_paths: List[Tuple[Union[str, None], str]] = []
+        self.secret_ttl_identifier: List[Tuple[str, int, float]] = []
+        self.TTL_RENEW_INCREMENT: int = 300
+
+        self.ttl_renew_thread = threading.Thread(name='ttl-renew', target=self.ttl_expire_check)
+        self.ttl_renew_thread.run()
 
     def __flatten(
         self,
@@ -559,7 +567,6 @@ class Gestalt:
         if bool(client_config) == False:
             raise TypeError("Gestalt Error: client config is empty for Vault")
         client_config['url'] = os.environ.get("VAULT_ADDR")
-        print(client_config)
         if not client_config['url']:
             raise RuntimeError('Gestalt Error: VAULT_ADDR is missing')
         if client_config['token'] == "":
@@ -611,7 +618,12 @@ class Gestalt:
             try:
                 secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
                     mount_point=str(mount_path), path=secret_path)
+                print(secret_token)
                 self.__conf_data.update(secret_token['data']['data'])
+                secret_lease = (secret_token['lease_id'],
+                                secret_token['lease_duration'],
+                                time.time())
+                self.secret_ttl_identifier.append(secret_lease)
             except hvac.exceptions.InvalidPath as err:
                 raise RuntimeError(
                     "Gestalt Error: The secret path or mount is set incorrectly"
@@ -619,3 +631,13 @@ class Gestalt:
             except requests.exceptions.ConnectionError as err:
                 raise RuntimeError(
                     "Gestalt Error: Gestalt couldn't connect to Vault")
+
+    def ttl_expire_check(self) -> None:
+        while(True):
+            for lease in self.secret_ttl_identifier:
+                if lease[2] - time.time() <= 0.667 * lease[1]:
+                    self.vault_client.sys.renew_lease(
+                        lease_id=lease[0],
+                        increment=self.TTL_RENEW_INCREMENT
+                    )
+            time.sleep(300)
