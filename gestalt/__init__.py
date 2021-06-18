@@ -556,24 +556,8 @@ class Gestalt:
             auth_config (HVAC_ClientAuthentication): authenticates the initialized vault client
                 with role and jwt string from kubernetes
         """
-        if bool(client_config) == False:
-            raise TypeError("Gestalt Error: client config is empty for Vault")
-        client_config['url'] = os.environ.get("VAULT_ADDR")
-        print(client_config)
-        if not client_config['url']:
-            raise RuntimeError('Gestalt Error: VAULT_ADDR is missing')
-        if client_config['token'] == "":
-            client_config['token'] == os.environ.get("VAULT_TOKEN", "")
-        if client_config['verify']:
-            verify = True
-        else:
-            verify = False
-
-        self.vault_client: hvac.Client = hvac.Client(client_config['url'],
-                                                     client_config['token'],
-                                                     client_config['cert'],
-                                                     verify=verify)
-
+        self.vault_client = hvac.Client()
+        
         if auth_config:
             try:
                 self.vault_client.auth_kubernetes(\
