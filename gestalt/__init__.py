@@ -59,8 +59,7 @@ class Gestalt:
         self.__vault_paths: List[Tuple[Union[str, None], str]] = []
         self.secret_ttl_identifier: List[Tuple[str, int, float]] = []
         self.TTL_RENEW_INCREMENT: int = 300
-        # self.ttl_renew_thread = threading.Thread(name='ttl-renew', target=self.ttl_expire_check)
-        # self.ttl_renew_thread.run()
+        self.ttl_renew_thread = threading.Thread(name='ttl-renew', target=self.ttl_expire_check)
 
     def __flatten(
         self,
@@ -628,6 +627,8 @@ class Gestalt:
             except requests.exceptions.ConnectionError as err:
                 raise RuntimeError(
                     "Gestalt Error: Gestalt couldn't connect to Vault")
+        self.ttl_renew_thread.start()
+        self.ttl_renew_thread.join()
 
     def ttl_expire_check(self) -> None:
         while (True):
