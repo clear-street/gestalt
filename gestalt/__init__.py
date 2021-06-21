@@ -12,10 +12,6 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import TypedDict
 
-class HVAC_ClientAuthentication(TypedDict):
-    role: str
-    jwt: str
-
 
 class Gestalt:
     def __init__(self) -> None:
@@ -531,8 +527,13 @@ class Gestalt:
         ret.update(self.__conf_sets)
         return str(json.dumps(ret, indent=4))
 
-    def add_vault_config_provider(
-            self, url: Optional[str], token: Optional[str], cert: Optional[None], role: Optional[str], jwt: Optional[str], verify=True) -> None:
+    def add_vault_config_provider(self,
+                                  url: Optional[str] = None,
+                                  token: Optional[str] = None,
+                                  cert: Optional[str] = None,
+                                  role: Optional[str] = None,
+                                  jwt: Optional[str] = None,
+                                  verify: Optional[bool] = True) -> None:
         """Initialized vault client and authenticates vault
 
         Args:
@@ -542,22 +543,27 @@ class Gestalt:
             auth_config (HVAC_ClientAuthentication): authenticates the initialized vault client
                 with role and jwt string from kubernetes
         """
-        self.vault_client = hvac.Client(url=url, token=token, cert=cert, verify=verify)
-        if not self.vault_client.is_authenticated():
-            raise(RuntimeError(
-                "Gestalt Error: incorrect vault configuration received"
-            ))
 
+        self.vault_client = hvac.Client(url=url,
+                                        token=token,
+                                        cert=cert,
+                                        verify=verify)
+        try:
+            self.vault_client.is_authenticated()
+        except requests.exceptions.MissingSchema:
+            raise RuntimeError(
+                "Gestalt Error: Incorrect VAULT_ADDR or VAULT_TOKEN provided")
         if role and jwt:
             try:
                 self.vault_client.auth_kubernetes(\
                     role=role,
                     jwt=jwt
                 )
+            except hvac.exceptions.InvalidPath as err:
+                raise RuntimeError(
+                    "Gestalt Error: Kubernetes auth couldn't be performed")
             except requests.exceptions.ConnectionError as err:
-                print(
-                    "Gestalt Error: Couldn't connect to Vault"
-                )
+                raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
     def add_vault_secret_path(self,
                               path: str,
