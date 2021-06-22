@@ -4,6 +4,7 @@ import pytest
 import os
 import gestalt
 import hvac
+import re
 import requests
 
 
@@ -464,7 +465,6 @@ def test_vault_incorrect_path(env_setup):
     g = gestalt.Gestalt()
     g.build_config()
     g.add_vault_config_provider()
-    print("Requires the user to set a token in the client")
     client_id = "random_client"
     client_password = "random_password"
     g.add_vault_secret_path(path="random_path")
@@ -490,7 +490,6 @@ def test_vault_mount_path(env_setup, mount_setup):
     g = gestalt.Gestalt()
     g.build_config()
     g.add_vault_config_provider()
-    print("Requires the user to set a token in the client")
     client_id_mount_path = "test_mount"
     client_password_mount_path = "test_mount_password"
     g.add_vault_secret_path("test", mount_path="test-mount")
@@ -503,9 +502,60 @@ def test_vault_incorrect_mount_path(env_setup):
     g = gestalt.Gestalt()
     g.build_config()
     g.add_vault_config_provider()
-    print("Requires the user to set a token in the client")
     client_id_mount_path = "random_test_mount"
     client_password_mount_path = "random_test_mount_password"
     g.add_vault_secret_path("test", mount_path="incorrect-mount-point")
     with pytest.raises(RuntimeError):
         g.fetch_vault_secrets()
+
+
+@pytest.fixture(scope="function")
+def setup_dynamic_secrets():
+    client = hvac.Client()
+    secret_engines_list = client.sys.list_mounted_secrets_engines(
+    )['data'].keys()
+    if "aws/" in secret_engines_list:
+        client.sys.disable_secrets_engine(path="aws")
+    client.secrets.aws.configure_root_iam_credentials(
+        access_key=os.getenv('AWS_ACCESS_KEY_ID'),
+        seccret_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    )
+    describe_ec2_policy_doc = {
+        'Version': '2021-06-22',
+        'Statement': [
+            {
+                'Resource': '*'
+                'Action': 'ec2:Describe*',
+                'Effect': 'Allow',
+            },
+        ],
+    }
+
+    client.secrets.aws.create_or_update_role(
+        name="test-role",
+        credential_type="assumed_role",
+        policy_document=describe_ec2_policy_doc,
+        policy_arns="arn:aws:iam::aws:policy/AmazonVPCReadOnlyAccess",
+        legacy_params=True
+    )
+
+    
+
+def test_generate_dynamic_secret(env, setup_dynamic_secrets):
+    g = gestalt.Gestalt()
+    g.add_vault_config_provider()
+    gen_credentials = g.vault_client.secrets.aws.generate_credentials(
+        name="test-role"
+    )
+    assert re.match(".*",gen_credentials['data']['acces_key']) == True
+
+
+def test_secret_lease_renewal(env_setup, setup_dynamic_secrets):
+    g = gestalt.Gestalt()
+    g.build_config()
+    g.add_vault_config_provider()
+    read_role = g.vault_client.secrets.aws.read_role(
+        name="test-role"
+    )
+    assert read_role 
+
