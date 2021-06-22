@@ -524,7 +524,7 @@ def setup_dynamic_secrets():
         'Version': '2021-06-22',
         'Statement': [
             {
-                'Resource': '*'
+                'Resource': '*',
                 'Action': 'ec2:Describe*',
                 'Effect': 'Allow',
             },
