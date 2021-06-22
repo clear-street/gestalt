@@ -598,9 +598,11 @@ class Gestalt:
                     mount_point=str(mount_path), path=secret_path)
                 print(secret_token)
                 self.__conf_data.update(secret_token['data']['data'])
-                secret_lease = (secret_token['lease_id'],
+                if secret_token['lease_id'] != '': 
+                    secret_lease = (secret_token['lease_id'],
                                 secret_token['lease_duration'], time.time())
-                self.secret_ttl_identifier.append(secret_lease)
+                    self.secret_ttl_identifier.append(secret_lease)
+                
             except hvac.exceptions.InvalidPath as err:
                 raise RuntimeError(
                     "Gestalt Error: The secret path or mount is set incorrectly"
@@ -612,9 +614,18 @@ class Gestalt:
         self.ttl_renew_thread.join()
 
     def ttl_expire_check(self) -> None:
+        count = 0
         while (True):
-            for lease in self.secret_ttl_identifier:
-                if lease[2] - time.time() <= 0.667 * lease[1]:
-                    self.vault_client.sys.renew_lease(
-                        lease_id=lease[0], increment=self.TTL_RENEW_INCREMENT)
-            time.sleep(300)
+            print(count)
+            if count == 3:
+                break
+            if len(self.secret_ttl_identifier) <= 0 and count <=3:
+                count += 1
+            else:    
+                print("entered")
+                for lease in self.secret_ttl_identifier:
+                    if lease[2] - time.time() <= 0.667 * lease[1]:
+                        print('Lease: ', lease[0])
+                        self.vault_client.sys.renew_lease(
+                            lease_id=lease[0], increment=self.TTL_RENEW_INCREMENT)
+            time.sleep(1)
