@@ -610,6 +610,8 @@ class Gestalt:
             except requests.exceptions.ConnectionError as err:
                 raise RuntimeError(
                     "Gestalt Error: Gestalt couldn't connect to Vault")
+            except Exception as err:
+                raise RuntimeError(f"Gestalt Error: {err}")
         self.ttl_renew_thread.start()
         self.ttl_renew_thread.join()
 
@@ -629,3 +631,4 @@ class Gestalt:
                         self.vault_client.sys.renew_lease(
                             lease_id=lease[0], increment=self.TTL_RENEW_INCREMENT)
             time.sleep(1)
+            
