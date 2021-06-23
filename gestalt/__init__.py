@@ -599,3 +599,5 @@ class Gestalt:
             except requests.exceptions.ConnectionError as err:
                 raise RuntimeError(
                     "Gestalt Error: Gestalt couldn't connect to Vault")
+            except Exception as err:
+                raise RuntimeError(f"Gestalt Error: {err}")
