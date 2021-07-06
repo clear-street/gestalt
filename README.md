@@ -235,6 +235,10 @@ The `get` function will raise `TypeError`s in the following cases:
 
 #### Working with Vault
 
+Vault handles two types of secrets, static secrets or dynamic secrets
+
+## Static Secrets
+
 To work with vault, connect gestalt with your vault cluster using:
 
 The default values are picked from the `VAULT_ADDR` and `VAULT_TOKEN` environment for the vault url and token respectively.
@@ -258,3 +262,11 @@ g.add_vault_secret_path(path="your-secret-pat", mount_path="mount-point")
 Lastly, use the `fetch_vault_secret` function to fetch the secrets from your vault cluster.
 
 Raises a RuntimeError, if the path provided in `add_vault_secret_path` is invalid or the mount is invalid or anything else would be a generic Runtime Error
+
+## Dynamic Secrets
+
+Currently only dynamic secret support is generation of credentials for database. This database must be pre-configred in vault using either Vault UI or Terraform
+to maintain ease of library.
+
+To get a dynamic secret from the database, use the function `generate_database_dynamic_secret` which will raise Runtime exceptions if the proper setup is not done
+otherwise update gestalt config map with the username and password
