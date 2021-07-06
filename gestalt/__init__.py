@@ -612,8 +612,6 @@ class Gestalt:
                     "Gestalt Error: Gestalt couldn't connect to Vault")
             except Exception as err:
                 raise RuntimeError(f"Gestalt Error: {err}")
-        self.ttl_renew_thread.start()
-        self.ttl_renew_thread.join()
 
     def generate_database_dynamic_secret(self, mount_point: str, db_name: str, role_name: str):
         """Generates a dynamic secret for a database and updates the configuration data structure
@@ -635,21 +633,23 @@ class Gestalt:
             raise RuntimeError("Role name does not exist within the current connection. Please setup the role in vault connection")
         response = self.vault_client.secrets.database.generate_credentials(name=role_name, mount_point=mount_point)
         # self.__conf_data(response["data"])
-
+        if not self.ttl_renew_thread.is_alive():
+            self.ttl_renew_thread.start()
+            self.ttl_renew_thread.join()
 
     def ttl_expire_check(self) -> None:
         count = 0
+        if os.environ.get("CI"):
+            test_mode = True
         while (True):
-            if count == 3:
+            if test_mode and count == 5:   # For testing cases the thread will stop after 5 renewals
                 break
-            if len(self.secret_ttl_identifier) <= 0 and count <=3:
-                count += 1
-            else:    
-                print("entered")
-                for lease in self.secret_ttl_identifier:
-                    if lease[2] - time.time() <= 0.667 * lease[1]:
-                        print('Lease: ', lease[0])
-                        self.vault_client.sys.renew_lease(
-                            lease_id=lease[0], increment=self.TTL_RENEW_INCREMENT)
+            for lease in self.secret_ttl_identifier:    # Lease Renewal based 2/3 policy of vault
+                if lease[2] - time.time() <= 0.667 * lease[1]:
+                    print('Lease: ', lease[0])
+                    renewed_lease = self.vault_client.sys.renew_lease(
+                        lease_id=lease[0], increment=self.TTL_RENEW_INCREMENT)
+                    lease[2] = renewed_lease["lease_duration"]
+            if test_mode: count += 1
             time.sleep(1)
             

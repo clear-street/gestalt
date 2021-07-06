@@ -553,7 +553,6 @@ def setup_dynamic_secrets():
             "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}' INHERIT;",
     "GRANT ro TO \"{{name}}\";"
         ],
-
     )
 
 def test_database_connection(env_setup, setup_dynamic_secrets):
