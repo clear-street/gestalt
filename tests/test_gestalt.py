@@ -577,9 +577,9 @@ def test_generate_dynamic_secret(env_setup, setup_dynamic_secrets):
     g.add_vault_config_provider()
     role_name="my-role"
     mount_point="psql"
-    db_name="my-postgresql-connection"
-    g.get_database_dynamic_secret(mount_point=mount_point, db_name=db_name, role_name=role_name)
-    assert True
+    db_name="my-postgresql-database"
+    with pytest.raises(hvac.exceptions.InternalServerError):
+        g.generate_database_dynamic_secret(mount_point=mount_point, db_name=db_name, role_name=role_name)
 
 
 # def test_dynamic_secret_renewal():
