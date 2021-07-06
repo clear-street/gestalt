@@ -615,10 +615,31 @@ class Gestalt:
         self.ttl_renew_thread.start()
         self.ttl_renew_thread.join()
 
+    def generate_database_dynamic_secret(self, mount_point: str, db_name: str, role_name: str):
+        """Generates a dynamic secret for a database and updates the configuration data structure
+
+        Args:
+            mount_point (str): mount_point of the secret engine in vault
+            connection_name (str): database connection name
+            role_name (str): role under which the secret needs to be generated
+        """
+        secret_engines_list = self.vault_client.sys.list_mounted_secrets_engines(
+    )['data'].keys()
+        if f"{mount_point}/" not in secret_engines_list:
+            raise RuntimeError(f"No secrets engine exists at the mount point {mount_point}")
+        existing_connections = self.vault_client.secrets.database.list_connections(mount_point=mount_point)["data"]["keys"]
+        if db_name not in existing_connections:
+            raise RuntimeError("Database Connection not existent for the current database. Please setup in vault cluster")
+        vault_database_roles = self.vault_client.secrets.database.list_roles(mount_point=mount_point)["data"]["keys"]
+        if role_name not in vault_database_roles:
+            raise RuntimeError("Role name does not exist within the current connection. Please setup the role in vault connection")
+        response = self.vault_client.secrets.database.generate_credentials(name=role_name, mount_point=mount_point)
+        # self.__conf_data(response["data"])
+
+
     def ttl_expire_check(self) -> None:
         count = 0
         while (True):
-            print(count)
             if count == 3:
                 break
             if len(self.secret_ttl_identifier) <= 0 and count <=3:

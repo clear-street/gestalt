@@ -6,6 +6,7 @@ import gestalt
 import hvac
 import re
 import requests
+import docker
 
 
 # Testing JSON Loading
@@ -512,50 +513,74 @@ def test_vault_incorrect_mount_path(env_setup):
 @pytest.fixture(scope="function")
 def setup_dynamic_secrets():
     client = hvac.Client()
+    # Check if the secrets_engine for psql exists, if yes then cleanup
+    # and then start a new secrets_engine
     secret_engines_list = client.sys.list_mounted_secrets_engines(
     )['data'].keys()
-    if "aws/" in secret_engines_list:
-        client.sys.disable_secrets_engine(path="aws")
-    client.secrets.aws.configure_root_iam_credentials(
-        access_key=os.getenv('AWS_ACCESS_KEY_ID'),
-        seccret_key=os.getenv('AWS_SECRET_ACCESS_KEY')
-    )
-    describe_ec2_policy_doc = {
-        'Version': '2021-06-22',
-        'Statement': [
-            {
-                'Resource': '*',
-                'Action': 'ec2:Describe*',
-                'Effect': 'Allow',
-            },
-        ],
-    }
-
-    client.secrets.aws.create_or_update_role(
-        name="test-role",
-        credential_type="assumed_role",
-        policy_document=describe_ec2_policy_doc,
-        policy_arns="arn:aws:iam::aws:policy/AmazonVPCReadOnlyAccess",
-        legacy_params=True
-    )
-
+    mount_point="psql"
+    if f"{mount_point}/" in secret_engines_list:
+        client.sys.disable_secrets_engine(path=mount_point)
     
+    client.sys.enable_secrets_engine(backend_type="database", path=mount_point)
+    
+    # Configure the database secrets engine with postgres service container
+    if os.environ.get("CI") == True:
+        connection_url="postgresql://{{username}}:{{password}}@localhost:5432?sslmode=disable"
+    else:
+        # Running in local environment, fetch the local ip address for the network of postgres
+        # Assumes this is running in the same networks. If not, please run postgres and vault
+        # in the same network using --net flag
+        docker_client = docker.DockerClient()
+        container = docker_client.containers.get("postgres")
+        ip_addr = container.attrs["NetworkSettings"]["Networks"]["local"]["IPAddress"]
+        connection_url="postgresql://{{username}}:{{password}}@"+f"{ip_addr}:5432?sslmode=disable"
+    db_name="my-postgresql-database"
+    plugin_name="postgresql-database-plugin"
+    role_name="my-role"
+    client.secrets.database.configure(
+        name=db_name,
+        plugin_name=plugin_name,
+        mount_point=mount_point,
+        connection_url=connection_url,
+        username="postgres",
+        password="postgres"
+    )
+    client.secrets.database.create_role(
+        name=role_name,
+        mount_point=mount_point,
+        db_name=db_name,
+        creation_statements=[
+            "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}' INHERIT;",
+    "GRANT ro TO \"{{name}}\";"
+        ],
 
-def test_generate_dynamic_secret(env, setup_dynamic_secrets):
+    )
+
+def test_database_connection(env_setup, setup_dynamic_secrets):
     g = gestalt.Gestalt()
     g.add_vault_config_provider()
-    gen_credentials = g.vault_client.secrets.aws.generate_credentials(
-        name="test-role"
-    )
-    assert re.match(".*",gen_credentials['data']['acces_key']) == True
+    mount_point="psql"
+    response = g.vault_client.secrets.database.list_connections(mount_point=mount_point)
+    assert "my-postgresql-database" in response["data"]["keys"]
 
 
-def test_secret_lease_renewal(env_setup, setup_dynamic_secrets):
+def test_database_role():
     g = gestalt.Gestalt()
-    g.build_config()
     g.add_vault_config_provider()
-    read_role = g.vault_client.secrets.aws.read_role(
-        name="test-role"
-    )
-    assert read_role 
+    mount_point="psql"
+    response = g.vault_client.secrets.database.list_roles(mount_point=mount_point)["data"]["keys"]
+    assert "my-role" in response
 
+
+def test_generate_dynamic_secret(env_setup, setup_dynamic_secrets):
+    g = gestalt.Gestalt()
+    g.add_vault_config_provider()
+    role_name="my-role"
+    mount_point="psql"
+    db_name="my-postgresql-connection"
+    g.get_database_dynamic_secret(mount_point=mount_point, db_name=db_name, role_name=role_name)
+    assert True
+
+
+# def test_dynamic_secret_renewal():
+#   pass
