@@ -1,11 +1,8 @@
+from gestalt.vault import Vault
 import os
 import glob
 import sys
 import json
-import requests
-import time
-import threading
-import hvac  # type: ignore
 import collections.abc as collections
 from typing import Dict, List, Tuple, Type, Union, Optional, MutableMapping, Text, Any, NamedTuple
 import yaml
@@ -39,10 +36,7 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
-        self.__vault_paths: List[Tuple[Union[str, None], str]] = []
-        self.secret_ttl_identifier: List[Tuple[str, int, float]] = []
-        self.TTL_RENEW_INCREMENT: int = 300
-        self.ttl_renew_thread = threading.Thread(name='ttl-renew', target=self.ttl_expire_check)
+        self.vault = Vault()
 
     def __flatten(
         self,
@@ -531,125 +525,3 @@ class Gestalt:
         ret.update(self.__conf_data)
         ret.update(self.__conf_sets)
         return str(json.dumps(ret, indent=4))
-
-    def add_vault_config_provider(self,
-                                  url: Optional[str] = None,
-                                  token: Optional[str] = None,
-                                  cert: Optional[str] = None,
-                                  role: Optional[str] = None,
-                                  jwt: Optional[str] = None,
-                                  verify: Optional[bool] = True) -> None:
-        """Initialized vault client and authenticates vault
-
-        Args:
-            client_config (HVAC_ClientConfig): initializes vault. URL can be set in VAULT_ADDR
-                environment variable, token can be set to VAULT_TOKEN environment variable.
-                These will be picked by default if not set to empty string
-            auth_config (HVAC_ClientAuthentication): authenticates the initialized vault client
-                with role and jwt string from kubernetes
-        """
-
-        self.vault_client = hvac.Client(url=url,
-                                        token=token,
-                                        cert=cert,
-                                        verify=verify)
-        try:
-            self.vault_client.is_authenticated()
-        except requests.exceptions.MissingSchema:
-            raise RuntimeError(
-                "Gestalt Error: Incorrect VAULT_ADDR or VAULT_TOKEN provided")
-        if role and jwt:
-            try:
-                self.vault_client.auth_kubernetes(\
-                    role=role,
-                    jwt=jwt
-                )
-            except hvac.exceptions.InvalidPath as err:
-                raise RuntimeError(
-                    "Gestalt Error: Kubernetes auth couldn't be performed")
-            except requests.exceptions.ConnectionError as err:
-                raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
-
-    def add_vault_secret_path(self,
-                              path: str,
-                              mount_path: Optional[str] = None) -> None:
-        """Adds a vault secret with key and path to gestalt
-
-        Args:
-            path (str): The path to the secret in vault cluster
-            mount_path ([type], optional): The mount_path for a non-default secret
-                mount. Defaults to Optional[str].
-        """
-        mount_path = mount_path if mount_path != None else "secret"
-
-        self.__vault_paths.append((mount_path, path))
-
-    def fetch_vault_secrets(self) -> None:
-        """Fetches client secrets from vault first checks the path provided 
-        """
-        if len(self.__vault_paths) <= 0:
-            return
-        print("Fetching secrets from VAULT")
-        for vault_path in self.__vault_paths:
-            mount_path = str(vault_path[0])
-            secret_path = vault_path[1]
-            try:
-                secret_token = self.vault_client.secrets.kv.v2.read_secret_version(
-                    mount_point=str(mount_path), path=secret_path)
-                print(secret_token)
-                self.__conf_data.update(secret_token['data']['data'])
-                if secret_token['lease_id'] != '': 
-                    secret_lease = (secret_token['lease_id'],
-                                secret_token['lease_duration'], time.time())
-                    self.secret_ttl_identifier.append(secret_lease)
-                
-            except hvac.exceptions.InvalidPath as err:
-                raise RuntimeError(
-                    "Gestalt Error: The secret path or mount is set incorrectly"
-                )
-            except requests.exceptions.ConnectionError as err:
-                raise RuntimeError(
-                    "Gestalt Error: Gestalt couldn't connect to Vault")
-            except Exception as err:
-                raise RuntimeError(f"Gestalt Error: {err}")
-
-    def generate_database_dynamic_secret(self, mount_point: str, db_name: str, role_name: str):
-        """Generates a dynamic secret for a database and updates the configuration data structure
-
-        Args:
-            mount_point (str): mount_point of the secret engine in vault
-            connection_name (str): database connection name
-            role_name (str): role under which the secret needs to be generated
-        """
-        secret_engines_list = self.vault_client.sys.list_mounted_secrets_engines(
-    )['data'].keys()
-        if f"{mount_point}/" not in secret_engines_list:
-            raise RuntimeError(f"No secrets engine exists at the mount point {mount_point}")
-        existing_connections = self.vault_client.secrets.database.list_connections(mount_point=mount_point)["data"]["keys"]
-        if db_name not in existing_connections:
-            raise RuntimeError("Database Connection not existent for the current database. Please setup in vault cluster")
-        vault_database_roles = self.vault_client.secrets.database.list_roles(mount_point=mount_point)["data"]["keys"]
-        if role_name not in vault_database_roles:
-            raise RuntimeError("Role name does not exist within the current connection. Please setup the role in vault connection")
-        response = self.vault_client.secrets.database.generate_credentials(name=role_name, mount_point=mount_point)
-        # self.__conf_data(response["data"])
-        if not self.ttl_renew_thread.is_alive():
-            self.ttl_renew_thread.start()
-            self.ttl_renew_thread.join()
-
-    def ttl_expire_check(self) -> None:
-        count = 0
-        if os.environ.get("CI"):
-            test_mode = True
-        while (True):
-            if test_mode and count == 5:   # For testing cases the thread will stop after 5 renewals
-                break
-            for lease in self.secret_ttl_identifier:    # Lease Renewal based 2/3 policy of vault
-                if lease[2] - time.time() <= 0.667 * lease[1]:
-                    print('Lease: ', lease[0])
-                    renewed_lease = self.vault_client.sys.renew_lease(
-                        lease_id=lease[0], increment=self.TTL_RENEW_INCREMENT)
-                    lease[2] = renewed_lease["lease_duration"]
-            if test_mode: count += 1
-            time.sleep(1)
-            
