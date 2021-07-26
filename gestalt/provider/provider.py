@@ -15,18 +15,6 @@ class Provider():
         self.provider = self.initialize_provider(self.__provider_name)
         self.provider.get(self.__path, self.__filter)
 
-    def get_provider(self):
-        """Return the provider name"""
-        return self.__provider
-    
-    def get_path(self):
-        """Return the path"""
-        return self.__path
-    
-    def get_filter(self):
-        """Return the filter"""
-        return self.__filter
-    
     def get(self, path: str, filter: str):
         """Abstract method for getting data from the provider"""
         pass

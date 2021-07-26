@@ -1,7 +1,6 @@
 from gestalt.provider.helpers import parse_nested_dict_and_find_key
-import os
 import requests
-from typing import NamedTuple, Optional, Tuple, Union, List
+from typing import Optional
 from provider import Provider
 import hvac
 import sys
@@ -11,30 +10,8 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import TypedDict
 
-class CACertClient(NamedTuple):
-    client_cert_path: str
-    client_key_path: str
-
-
-class HVAC_ClientConfig(TypedDict):
-    url: Optional[str]
-    token: str
-    cert: Union[None, CACertClient]
-    verify: Union[None, bool]
-
-
-class HVAC_ClientAuthentication(TypedDict):
-    role: str
-    jwt: str
-
-
-DEFAULT_VAULT_URL = "localhost:8200"
-
-
 class Vault(Provider):
     def __init__(self,
-                 path: str,
-                 filter: str = None, 
                  url: Optional[str] = None,
                  token: Optional[str] = None,
                  cert: Optional[str] = None,
@@ -71,7 +48,6 @@ class Vault(Provider):
                     "Gestalt Error: Kubernetes auth couldn't be performed")
             except requests.exceptions.ConnectionError as err:
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
-        
 
 
     def get(self, path: str, filter: str) -> str:
