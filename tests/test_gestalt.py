@@ -4,8 +4,6 @@ import pytest
 import os
 import gestalt
 import hvac
-import re
-import requests
 import docker
 
 
@@ -425,7 +423,7 @@ def test_set_default_bad_type_set_config():
         assert 'Set config has' in terr
 
 
-## Vault testing
+# Vault testing
 @pytest.fixture(scope="function")
 def env_setup():
     os.environ['VAULT_ADDR'] = "http://localhost:8200"
@@ -435,7 +433,8 @@ def env_setup():
 def test_vault_setup(env_setup):
     g = gestalt.Gestalt()
     g.add_vault_config_provider()
-    assert g.vault_client.is_authenticated() == True
+    is_vault_authenticated = g.vault_client.is_authenticated()
+    assert is_vault_authenticated is True  # type: ignore
 
 
 @pytest.fixture(scope="function")
@@ -462,15 +461,13 @@ def test_vault_fail_kubernetes_auth(env_setup):
         g.add_vault_config_provider(role="random_role", jwt="random_jwt")
 
 
-def test_vault_incorrect_path(env_setup):
+def test_vault_incorrect_path(env_setup, capsys):
     g = gestalt.Gestalt()
     g.build_config()
     g.add_vault_config_provider()
-    client_id = "random_client"
-    client_password = "random_password"
     g.add_vault_secret_path(path="random_path")
-    with pytest.raises(RuntimeError):
-        g.fetch_vault_secrets()
+    captured = capsys.readouterr
+    assert captured.out == "No secrets exist at this path!"
 
 
 @pytest.fixture(scope="function")
@@ -499,15 +496,13 @@ def test_vault_mount_path(env_setup, mount_setup):
     assert secret == client_password_mount_path
 
 
-def test_vault_incorrect_mount_path(env_setup):
+def test_vault_incorrect_mount_path(env_setup, capsys):
     g = gestalt.Gestalt()
     g.build_config()
     g.add_vault_config_provider()
-    client_id_mount_path = "random_test_mount"
-    client_password_mount_path = "random_test_mount_password"
     g.add_vault_secret_path("test", mount_path="incorrect-mount-point")
-    with pytest.raises(RuntimeError):
-        g.fetch_vault_secrets()
+    captured = capsys.readouterror()
+    assert captured.out == "No secrets exist at this path!"
 
 
 @pytest.fixture(scope="function")
@@ -517,69 +512,67 @@ def setup_dynamic_secrets():
     # and then start a new secrets_engine
     secret_engines_list = client.sys.list_mounted_secrets_engines(
     )['data'].keys()
-    mount_point="psql"
+    mount_point = "psql"
     if f"{mount_point}/" in secret_engines_list:
         client.sys.disable_secrets_engine(path=mount_point)
-    
     client.sys.enable_secrets_engine(backend_type="database", path=mount_point)
-    
+
     # Configure the database secrets engine with postgres service container
-    if os.environ.get("CI") == True:
-        connection_url="postgresql://{{username}}:{{password}}@localhost:5432?sslmode=disable"
+    if os.environ.get("CI") is True:
+        connection_url = "postgresql://{{username}}:{{password}}@localhost:5432?sslmode=disable"
     else:
         # Running in local environment, fetch the local ip address for the network of postgres
         # Assumes this is running in the same networks. If not, please run postgres and vault
         # in the same network using --net flag
         docker_client = docker.DockerClient()
         container = docker_client.containers.get("postgres")
-        ip_addr = container.attrs["NetworkSettings"]["Networks"]["local"]["IPAddress"]
-        connection_url="postgresql://{{username}}:{{password}}@"+f"{ip_addr}:5432?sslmode=disable"
-    db_name="my-postgresql-database"
-    plugin_name="postgresql-database-plugin"
-    role_name="my-role"
-    client.secrets.database.configure(
-        name=db_name,
-        plugin_name=plugin_name,
-        mount_point=mount_point,
-        connection_url=connection_url,
-        username="postgres",
-        password="postgres"
-    )
+        ip_addr = container.attrs["NetworkSettings"]["Networks"]["local"][
+            "IPAddress"]
+        connection_url = "postgresql://{{username}}:{{password}}@" + f"{ip_addr}:5432?sslmode=disable"
+    db_name = "my-postgresql-database"
+    plugin_name = "postgresql-database-plugin"
+    role_name = "my-role"
+    client.secrets.database.configure(name=db_name,
+                                      plugin_name=plugin_name,
+                                      mount_point=mount_point,
+                                      connection_url=connection_url,
+                                      username="postgres",
+                                      password="postgres")
     client.secrets.database.create_role(
         name=role_name,
         mount_point=mount_point,
         db_name=db_name,
         creation_statements=[
             "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}' INHERIT;",
-    "GRANT ro TO \"{{name}}\";"
+            "GRANT ro TO \"{{name}}\";"
         ],
     )
+
 
 def test_database_connection(env_setup, setup_dynamic_secrets):
     g = gestalt.Gestalt()
     g.add_vault_config_provider()
-    mount_point="psql"
-    response = g.vault_client.secrets.database.list_connections(mount_point=mount_point)
+    mount_point = "psql"
+    response = g.vault_client.secrets.database.list_connections(
+        mount_point=mount_point)
     assert "my-postgresql-database" in response["data"]["keys"]
 
 
 def test_database_role():
     g = gestalt.Gestalt()
     g.add_vault_config_provider()
-    mount_point="psql"
-    response = g.vault_client.secrets.database.list_roles(mount_point=mount_point)["data"]["keys"]
+    mount_point = "psql"
+    response = g.vault_client.secrets.database.list_roles(
+        mount_point=mount_point)["data"]["keys"]
     assert "my-role" in response
 
 
 def test_generate_dynamic_secret(env_setup, setup_dynamic_secrets):
     g = gestalt.Gestalt()
     g.add_vault_config_provider()
-    role_name="my-role"
-    mount_point="psql"
-    db_name="my-postgresql-database"
-    with pytest.raises(hvac.exceptions.InternalServerError):
-        g.generate_database_dynamic_secret(mount_point=mount_point, db_name=db_name, role_name=role_name)
-
-
-# def test_dynamic_secret_renewal():
-#   pass
+    role_name = "my-role"
+    mount_point = "psql"
+    path = f"/credentials/{role_name}"
+    g.add_vault_secret_path(path=path, mount_path=mount_point)
+    g.fetch_vault_secrets()
+    assert False is True
