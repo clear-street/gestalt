@@ -1,16 +1,16 @@
-from gestalt.provider.helpers import parse_nested_dict_and_find_key
+from .helpers import parse_nested_dict_and_find_key
 import requests
 from typing import Optional
-from provider import Provider
 import hvac
 import sys
+import json
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
 else:
     from typing_extensions import TypedDict
 
-class Vault(Provider):
+class Vault():
     def __init__(self,
                  url: Optional[str] = None,
                  token: Optional[str] = None,
@@ -50,13 +50,13 @@ class Vault(Provider):
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
 
-    def get(self, path: str, filter: str) -> str:
+    def get(self, key: str, path: str, filter: str) -> str:
         print("Fetching secrets from VAULT")
         
         try:
             response = self.vault_client.read(path)
-            requested_data = parse_nested_dict_and_find_key(response, filter) if filter is not None else response
-            self.__conf_data.update(requested_data)
+            requested_data = response['data']['data'] if filter is None else response
+            return requested_data[key]
         except hvac.exceptions.InvalidPath as err:
             raise RuntimeError(
                 "Gestalt Error: The secret path or mount is set incorrectly"
