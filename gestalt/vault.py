@@ -1,14 +1,7 @@
-from .helpers import parse_nested_dict_and_find_key
 import requests
 from typing import Optional
 import hvac
-import sys
-import json
 
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
 
 class Vault():
     def __init__(self,
@@ -39,31 +32,37 @@ class Vault():
                 "Gestalt Error: Incorrect VAULT_ADDR or VAULT_TOKEN provided")
         if role and jwt:
             try:
-                self.vault_client.auth_kubernetes(\
+                self.vault_client.auth_kubernetes(
                     role=role,
                     jwt=jwt
                 )
-            except hvac.exceptions.InvalidPath as err:
+            except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
                     "Gestalt Error: Kubernetes auth couldn't be performed")
-            except requests.exceptions.ConnectionError as err:
+            except requests.exceptions.ConnectionError:
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
-
     def get(self, key: str, path: str, filter: str) -> str:
-        print("Fetching secrets from VAULT")
-        
+        """Gets secret from vault
+        Args:
+            key (str): key to get secret from
+            path (str): path to secret
+            filter (str): filter to apply to secret
+        Returns:
+            secret (str): secret
+        """
+
         try:
             response = self.vault_client.read(path)
             if response is None:
                 raise RuntimeError("Gestalt Error: No secrets found")
             requested_data = response['data']['data'] if filter is None else response
             return requested_data[key]
-        except hvac.exceptions.InvalidPath as err:
+        except hvac.exceptions.InvalidPath:
             raise RuntimeError(
                 "Gestalt Error: The secret path or mount is set incorrectly"
             )
-        except requests.exceptions.ConnectionError as err:
+        except requests.exceptions.ConnectionError:
             raise RuntimeError(
                 "Gestalt Error: Gestalt couldn't connect to Vault")
         except Exception as err:

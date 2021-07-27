@@ -3,7 +3,6 @@ import os
 import glob
 import re
 import json
-
 import collections.abc as collections
 from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 import yaml
@@ -33,7 +32,6 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
-
 
     def __flatten(
         self,
@@ -150,15 +148,16 @@ class Gestalt:
 
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
+        self.interpolate()
 
+    def interpolate(self):
         for k, v in self.__conf_data.items():
             if isinstance(v, str):
                 if re.match("^ref+.*$", v):
                     secret = Provider(k, v).value
                     self.__conf_data.update({k: secret})
-                else: 
+                else:
                     continue
-
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables

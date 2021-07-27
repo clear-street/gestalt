@@ -1,10 +1,10 @@
-
 from .vault import Vault
 
 
 SUPPORTED_PROVIDERS = [
     "vault"
 ]
+
 
 class Provider():
     """Abstract class for all providers"""
@@ -21,7 +21,6 @@ class Provider():
     def get(self, key: str, path: str, filter: str):
         """Abstract method for getting data from the provider"""
         pass
-
 
     def initialize_provider(self, provider: str):
         """Initialize the provider"""

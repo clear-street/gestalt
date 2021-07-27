@@ -4,7 +4,6 @@ import pytest
 import os
 import gestalt
 import hvac
-import requests
 
 
 # Testing JSON Loading
@@ -423,7 +422,7 @@ def test_set_default_bad_type_set_config():
         assert 'Set config has' in terr
 
 
-## Vault testing
+# Vault testing
 @pytest.fixture(scope="function")
 def env_setup():
     os.environ['VAULT_ADDR'] = "http://localhost:8200"
@@ -455,6 +454,7 @@ def secret_setup(env_setup):
         path="test",
         secret=dict(test_secret="test_secret_password"))
 
+
 def test_vault_interpolation(env_setup, secret_setup):
     g = gestalt.Gestalt()
     g.add_config_file("./tests/testvault/testcorrect.yaml")
@@ -462,12 +462,13 @@ def test_vault_interpolation(env_setup, secret_setup):
     secret = g.get_string("test_secret")
     assert secret == "test_secret_password"
 
+
 def test_vault_incorrect_path(env_setup, mount_setup):
     g = gestalt.Gestalt()
     g.add_config_file("./tests/testvault/testincorrect.yaml")
     with pytest.raises(RuntimeError):
         g.build_config()
-    
+
 
 @pytest.fixture(scope="function")
 def mount_setup(env_setup):
