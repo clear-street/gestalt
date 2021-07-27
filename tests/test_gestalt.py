@@ -430,10 +430,9 @@ def env_setup():
     os.environ['VAULT_TOKEN'] = "myroot"
 
 
-def test_vault_setup(env_setup):
-    g = gestalt.Gestalt()
-    g.add_vault_config_provider()
-    assert g.vault_client.is_authenticated() == True
+# def test_vault_setup(env_setup):
+#     g = gestalt.Gestalt()
+#     assert g.vault_client.is_authenticated() == True
 
 
 @pytest.fixture(scope="function")
@@ -444,33 +443,31 @@ def incorrect_env_setup():
 
 def test_vault_fail_setup(incorrect_env_setup):
     g = gestalt.Gestalt()
+    g.add_config_file("./tests/testvault/testcorrect.yaml")
     with pytest.raises(RuntimeError):
-        g.add_vault_config_provider()
+        g.build_config()
 
 
-def test_vault_connection_error():
+@pytest.fixture(scope="function")
+def secret_setup(env_setup):
+    client = hvac.Client()
+    client.secrets.kv.v2.create_or_update_secret(
+        path="test",
+        secret=dict(test_secret="test_secret_password"))
+
+def test_vault_interpolation(env_setup, secret_setup):
     g = gestalt.Gestalt()
-    with pytest.raises(RuntimeError):
-        g.add_vault_config_provider()
-
-
-def test_vault_fail_kubernetes_auth(env_setup):
-    g = gestalt.Gestalt()
-    with pytest.raises(RuntimeError):
-        g.add_vault_config_provider(role="random_role", jwt="random_jwt")
-
-
-def test_vault_incorrect_path(env_setup):
-    g = gestalt.Gestalt()
+    g.add_config_file("./tests/testvault/testcorrect.yaml")
     g.build_config()
-    g.add_vault_config_provider()
-    print("Requires the user to set a token in the client")
-    client_id = "random_client"
-    client_password = "random_password"
-    g.add_vault_secret_path(path="random_path")
-    with pytest.raises(RuntimeError):
-        g.fetch_vault_secrets()
+    secret = g.get_string("test_secret")
+    assert secret == "test_secret_password"
 
+def test_vault_incorrect_path(env_setup, mount_setup):
+    g = gestalt.Gestalt()
+    g.add_config_file("./tests/testvault/testincorrect.yaml")
+    with pytest.raises(RuntimeError):
+        g.build_config()
+    
 
 @pytest.fixture(scope="function")
 def mount_setup(env_setup):
@@ -488,24 +485,7 @@ def mount_setup(env_setup):
 
 def test_vault_mount_path(env_setup, mount_setup):
     g = gestalt.Gestalt()
+    g.add_config_file("./tests/testvault/testmount.yaml")
     g.build_config()
-    g.add_vault_config_provider()
-    print("Requires the user to set a token in the client")
-    client_id_mount_path = "test_mount"
-    client_password_mount_path = "test_mount_password"
-    g.add_vault_secret_path("test", mount_path="test-mount")
-    g.fetch_vault_secrets()
-    secret = g.get_string(client_id_mount_path)
-    assert secret == client_password_mount_path
-
-
-def test_vault_incorrect_mount_path(env_setup):
-    g = gestalt.Gestalt()
-    g.build_config()
-    g.add_vault_config_provider()
-    print("Requires the user to set a token in the client")
-    client_id_mount_path = "random_test_mount"
-    client_password_mount_path = "random_test_mount_password"
-    g.add_vault_secret_path("test", mount_path="incorrect-mount-point")
-    with pytest.raises(RuntimeError):
-        g.fetch_vault_secrets()
+    secret = g.get_string("test_mount")
+    assert secret == "test_mount_password"
