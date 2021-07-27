@@ -1,11 +1,11 @@
-from provider import Provider
+from .provider import Provider
 import os
 import glob
-
+import re
 import json
 
 import collections.abc as collections
-from typing import Dict, List, Pattern, Tuple, Type, Union, Optional, MutableMapping, Text, Any
+from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 import yaml
 
 
@@ -33,7 +33,6 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
-        self.regex = Pattern(r'^[]+$')
 
 
     def __flatten(
@@ -152,13 +151,11 @@ class Gestalt:
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
 
-        self.interpolate_keys()
-
-    def interpolate_key(self) -> None:
         for k, v in self.__conf_data.items():
             if isinstance(v, str):
-                if self.regex.match(v):
-                    self.__conf_data[k] = Provider(v)
+                if re.match("^ref+.*$", v):
+                    secret = Provider(k, v).value
+                    self.__conf_data.update({k: secret})
                 else: 
                     continue
 
