@@ -55,6 +55,8 @@ class Vault():
         
         try:
             response = self.vault_client.read(path)
+            if response is None:
+                raise RuntimeError("Gestalt Error: No secrets found")
             requested_data = response['data']['data'] if filter is None else response
             return requested_data[key]
         except hvac.exceptions.InvalidPath as err:
