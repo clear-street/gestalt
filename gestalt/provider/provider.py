@@ -1,17 +1,11 @@
 from abc import ABCMeta, abstractmethod
 
-
-class ProviderConfig(metaclass=ABCMeta):
-    """ProviderConfig is an abstract base class that defines the interface for the provider configuration."""
-    pass
-    
-
 class Provider(metaclass=ABCMeta):
     """Abstract provider class
     """
     
     @abstractmethod
-    def __init__(self, config: ProviderConfig, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """Abstract initializer for the Provider class with ProviderConfig 
 
         Args:

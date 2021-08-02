@@ -1,32 +1,18 @@
-from .provider import Provider, ProviderConfig
+from .provider import Provider
 import requests
 from typing import Optional, Tuple
 from dataclasses import dataclass
 import hvac  # type: ignore
 import os
 
-@dataclass
-class VaultConfig(ProviderConfig):
-    """Configuration for Vault Instance
-    
-    Args:
-        role: Kubernetes role. Default: None
-        jwt: Kubernetes token. Default: None
-        url: URL to vault instance. Default: VAULT_ADDR ENV VAR 
-        token: Token to vault instance. Default: VAULT_TOKEN ENV VAR
-        cert: Cerificate for vault instance. Default None
-        verify: Verification for vault instance. Default True
-    """
-    role: Optional[str] = None
-    jwt: Optional[str] = None
-    url: Optional[str] = os.environ.get("VAULT_ADDR")
-    token: Optional[str] = os.environ.get("VAULT_TOKEN")
-    cert: Optional[Tuple(str, str)] = None
-    verify: Optional[bool] = True
-
 class Vault():
     def __init__(self,
-                 config: VaultConfig) -> None:
+                cert: Optional[Tuple] = None,
+                role: Optional[str] = None,
+                jwt: Optional[str] = None,
+                url: Optional[str] = os.environ.get("VAULT_ADDR"),
+                token: Optional[str] = os.environ.get("VAULT_TOKEN"),
+                verify: Optional[bool] = True) -> None:
         """Initialized vault client and authenticates vault
 
         Args:
@@ -36,21 +22,21 @@ class Vault():
             auth_config (HVAC_ClientAuthentication): authenticates the initialized vault client
                 with role and jwt string from kubernetes
         """
-
-        self.vault_client = hvac.Client(url=config.url,
-                                        token=config.token,
-                                        cert=config.cert,
-                                        verify=config.verify)
+        
+        self.vault_client = hvac.Client(url=url,
+                                        token=token,
+                                        cert=cert,
+                                        verify=verify)
         try:
             self.vault_client.is_authenticated()
         except requests.exceptions.MissingSchema:
             raise RuntimeError(
                 "Gestalt Error: Incorrect VAULT_ADDR or VAULT_TOKEN provided")
-        if config.role and config.jwt:
+        if role and jwt:
             try:
                 self.vault_client.auth_kubernetes(
-                    role=config.role,
-                    jwt=config.jwt
+                    role=role,
+                    jwt=jwt
                 )
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(

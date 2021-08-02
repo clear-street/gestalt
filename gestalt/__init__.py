@@ -1,4 +1,4 @@
-from .provider import Provider, ProviderConfig, Vault
+from .provider import Provider, Vault
 import os
 import glob
 import re
@@ -6,7 +6,6 @@ import json
 import collections.abc as collections
 from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any, Tuple
 import yaml
-
 
 class Gestalt:
     def __init__(self) -> None:
@@ -31,7 +30,10 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
-        self.__path_map: Dict[Tuple[str, Provider], Dict[str, List[str]]] = {}
+        self.__providers: Dict[str, Type[Provider]] = dict()
+        self.__secret_map: Dict[str, List[str]] = {}
+        self.regex_pattern = re.compile(r"^ref\+([^\+]*)://([^(\+)]+)\#([^\+]+)?$")
+
 
     def __flatten(
         self,
@@ -149,36 +151,41 @@ class Gestalt:
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
 
-
-        self.interpolate()
+        self.parse_keys()
+        self.interpolate_keys()
 
 
     def parse_keys(self):
         for k, v in self.__conf_data.items():
-            # Pattern match
-            # TODO: Implement interpolation from within the config
-            m = re.match(self.__interpolation_pattern, v) # TODO: Finish this with capture groups in python
+            if not isinstance(v, str):
+                continue
+            m = self.regex_pattern.search(v) # TODO: Finish this with capture groups in python
+            if m is None:
+                continue
             if m.group(1) not in self.__providers:
                 raise RuntimeError("Provider not configured yet expect to be used")
             if v in self.__secret_map:    
                 self.__secret_map[v].append(k)
             else:
                 self.__secret_map.update({v: [k]})
+            
                 
                 
-    def configure_provider(self, provider_name: str, config: ProviderConfig):
-        if provider_name == "vault":
-            self.__providers.update({"vault": Vault(config)})
+    def configure_provider(self, provider_name: str, provider: Provider):
+        if provider_name == "vault" and isinstance(provider, Vault):
+            self.__providers.update({"vault": provider})
         else: 
             raise TypeError("Provider provider is not supported")
 
     def interpolate_keys(self) -> None:
-        for path, v in self.__secret_map:
-            m = re.match(self.__interpolation_pattern, path)
-            provider = self.__get_provider(m.group(1))
-            secret = provider.get(m.group(2))
+        print(self.__secret_map)
+        for path, v in self.__secret_map.items():
+            print(path)
+            m = self.regex_pattern.search(path)
+            provider = self.__providers[m.group(1)]
             for config_key in v:
-                self.__conf_data.update({config_key: secret[config_key]})
+                secret = provider.get(key=config_key, path=m.group(2), filter=m.group(3))
+                self.__conf_data.update({config_key: secret})
 
     def interpolate(self):
         for k, v in self.__conf_data.items():
@@ -209,11 +216,20 @@ class Gestalt:
         """Fetches all configuration data
         """
         for k, v  in self.__path_map.items():
-            if k.group() is "vault": # use match groups for this:
+            if k.group() == "vault": # use match groups for this:
                 for entry in v:
                     role = ""
                     jwt = ""
                     Vault(role=role, jwt=jwt).get(key=entry)
+
+        def interpolate_key(key: Text) -> None:
+            for k, v in self.__conf_data.items():
+                if isinstance(v, str):
+                    if self.regex.match(v):
+                        self.__conf_data[k] = Provider(v)
+                    else: 
+                        continue
+                    
 
 
     def auto_env(self) -> None:

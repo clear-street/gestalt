@@ -1,2 +1,2 @@
-from .provider import ProviderConfig, Provider
-from .vault import VaultConfig, Vault
+from .provider import Provider
+from .vault import Vault
