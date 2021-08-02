@@ -445,7 +445,7 @@ def incorrect_env_setup():
 
 def test_vault_interpolation(incorrect_env_setup):
     g = gestalt.Gestalt()
-    g.add_config_file("./tests/testvault/testcorrect.yaml")
+    g.add_config_file("./tests/testvault/testcorrect.json")
     vault = Vault(role=None, jwt=None)
     g.configure_provider("vault", vault)
     g.build_config()
@@ -477,7 +477,7 @@ def mount_setup(env_setup):
 
 def test_vault_mount_path(env_setup, mount_setup):
     g = gestalt.Gestalt()
-    g.add_config_file("./tests/testvault/testmount.yaml")
+    g.add_config_file("./tests/testvault/testmount.json")
     g.configure_provider("vault", Vault(role=None, jwt=None))
     g.build_config()
     secret = g.get_string("test_mount")
@@ -486,7 +486,7 @@ def test_vault_mount_path(env_setup, mount_setup):
 
 def test_vault_incorrect_path(env_setup, mount_setup):
     g = gestalt.Gestalt()
-    g.add_config_file("./tests/testvault/testincorrectmount.yaml")
+    g.add_config_file("./tests/testvault/testincorrectmount.json")
     g.configure_provider("vault", Vault(role=None, jwt=None))
     with pytest.raises(RuntimeError):
         g.build_config()
