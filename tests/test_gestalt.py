@@ -1,5 +1,6 @@
 # type: ignore
 
+from gestalt.provider.vault import Vault
 import pytest
 import os
 import gestalt
@@ -428,10 +429,11 @@ def env_setup():
     os.environ['VAULT_ADDR'] = "http://localhost:8200"
     os.environ['VAULT_TOKEN'] = "myroot"
 
-
-# def test_vault_setup(env_setup):
-#     g = gestalt.Gestalt()
-#     assert g.vault_client.is_authenticated() == True
+def test_vault_setup(env_setup):
+    g = gestalt.Gestalt()
+    vault = Vault(role=None, jwt=None)
+    print(vault)
+    g.configure_provider("vault", vault)
 
 
 @pytest.fixture(scope="function")
@@ -440,12 +442,14 @@ def incorrect_env_setup():
     os.environ['VAULT_ADDR'] = ""
 
 
-def test_vault_fail_setup(incorrect_env_setup):
+def test_vault_interpolation(incorrect_env_setup):
     g = gestalt.Gestalt()
     g.add_config_file("./tests/testvault/testcorrect.yaml")
-    with pytest.raises(RuntimeError):
-        g.build_config()
-
+    vault = Vault(role=None, jwt=None)
+    g.configure_provider("vault", vault)
+    g.build_config()
+    secret = g.get_string("test_secret")
+    assert secret == "test_secret_password"
 
 @pytest.fixture(scope="function")
 def secret_setup(env_setup):
@@ -455,19 +459,12 @@ def secret_setup(env_setup):
         secret=dict(test_secret="test_secret_password"))
 
 
-def test_vault_interpolation(env_setup, secret_setup):
-    g = gestalt.Gestalt()
-    g.add_config_file("./tests/testvault/testcorrect.yaml")
-    g.build_config()
-    secret = g.get_string("test_secret")
-    assert secret == "test_secret_password"
-
 
 def test_vault_incorrect_path(env_setup, mount_setup):
     g = gestalt.Gestalt()
     g.add_config_file("./tests/testvault/testincorrect.yaml")
-    with pytest.raises(RuntimeError):
-        g.build_config()
+    g.configure_provider("vault", Vault(role=None, jwt=None))
+    g.build_config()
 
 
 @pytest.fixture(scope="function")
@@ -487,6 +484,16 @@ def mount_setup(env_setup):
 def test_vault_mount_path(env_setup, mount_setup):
     g = gestalt.Gestalt()
     g.add_config_file("./tests/testvault/testmount.yaml")
+    g.configure_provider("vault", Vault(role=None, jwt=None))
     g.build_config()
     secret = g.get_string("test_mount")
     assert secret == "test_mount_password"
+
+
+def test_vault_incorrect_path(env_setup, mount_setup):
+    g = gestalt.Gestalt()
+    g.add_config_file("./tests/testvault/testincorrectmount.yaml")
+    g.configure_provider("vault", Vault(role=None, jwt=None))
+    with pytest.raises(RuntimeError):
+        g.build_config()
+    

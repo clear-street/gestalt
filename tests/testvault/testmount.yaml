@@ -1,3 +1,3 @@
 {
-  "test_mount": "ref+vault://test-mount/data/test"
+  "test_mount": "ref+vault://test-mount/data/test#"
 }
