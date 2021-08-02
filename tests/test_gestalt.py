@@ -441,7 +441,15 @@ def incorrect_env_setup():
     os.environ['VAULT_ADDR'] = ""
 
 
-def test_vault_interpolation(env_setup):
+@pytest.fixture(scope="function")
+def secret_setup(env_setup):
+    client = hvac.Client()
+    client.secrets.kv.v2.create_or_update_secret(
+        path="test",
+        secret=dict(test_secret="test_secret_password"))
+
+
+def test_vault_interpolation(secret_setup):
     g = gestalt.Gestalt()
     g.add_config_file("./tests/testvault/testcorrect.json")
     vault = Vault(role=None, jwt=None)
@@ -449,14 +457,6 @@ def test_vault_interpolation(env_setup):
     g.build_config()
     secret = g.get_string("test_secret")
     assert secret == "test_secret_password"
-
-
-@pytest.fixture(scope="function")
-def secret_setup(env_setup):
-    client = hvac.Client()
-    client.secrets.kv.v2.create_or_update_secret(
-        path="test",
-        secret=dict(test_secret="test_secret_password"))
 
 
 @pytest.fixture(scope="function")
