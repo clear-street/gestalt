@@ -1,8 +1,9 @@
 yapf==0.29.0
 flake8==3.7.9
-mypy==0.720
-mypy-extensions==0.4.1
+mypy==0.910
+mypy-extensions==0.4.3
 pytest==4.3.1
 pytest-cov==2.8.1
 codecov==2.0.15
 hvac==0.10.9
+types-requests==2.25.2

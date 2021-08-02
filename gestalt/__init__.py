@@ -1,11 +1,13 @@
-from .provider import Provider, Vault
+from .provider.provider import Provider
+from .provider.vault import Vault
 import os
 import glob
 import re
 import json
 import collections.abc as collections
-from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any, Tuple
+from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 import yaml
+
 
 class Gestalt:
     def __init__(self) -> None:
@@ -30,10 +32,9 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
-        self.__providers: Dict[str, Type[Provider]] = dict()
+        self.__providers: Dict[str, Provider] = dict()
         self.__secret_map: Dict[str, List[str]] = {}
         self.regex_pattern = re.compile(r"^ref\+([^\+]*)://([^(\+)]+)\#([^\+]+)?$")
-
 
     def __flatten(
         self,
@@ -151,86 +152,55 @@ class Gestalt:
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
 
-        self.parse_keys()
-        self.interpolate_keys()
+        self.__parse_keys()
+        self.__interpolate_keys()
 
+    def __parse_keys(self) -> None:
+        """Parses the keys in the configuration data.
 
-    def parse_keys(self):
+        Raises:
+            RuntimeError: If the configuration data is not valid
+        """
         for k, v in self.__conf_data.items():
             if not isinstance(v, str):
                 continue
-            m = self.regex_pattern.search(v) # TODO: Finish this with capture groups in python
+            m = self.regex_pattern.search(v)  # TODO: Finish this with capture groups in python
             if m is None:
                 continue
             if m.group(1) not in self.__providers:
                 raise RuntimeError("Provider not configured yet expect to be used")
-            if v in self.__secret_map:    
+            if v in self.__secret_map:
                 self.__secret_map[v].append(k)
             else:
                 self.__secret_map.update({v: [k]})
-            
-                
-                
-    def configure_provider(self, provider_name: str, provider: Provider):
+
+    def configure_provider(self, provider_name: str, provider: Provider) -> None:
+        """Configures a provider for use in the library.
+
+        Args:
+            provider_name (str): The name of the provider to configure
+            provider (Provider): The provider to configure
+
+        Raises:
+            TypeError: If the provider is not an instance of the Provider class
+        """
         if provider_name == "vault" and isinstance(provider, Vault):
             self.__providers.update({"vault": provider})
-        else: 
+        else:
             raise TypeError("Provider provider is not supported")
 
-    def interpolate_keys(self) -> None:
+    def __interpolate_keys(self) -> None:
+        """Interpolates the keys in the configuration data.
+        """
         print(self.__secret_map)
         for path, v in self.__secret_map.items():
             print(path)
             m = self.regex_pattern.search(path)
-            provider = self.__providers[m.group(1)]
-            for config_key in v:
-                secret = provider.get(key=config_key, path=m.group(2), filter=m.group(3))
-                self.__conf_data.update({config_key: secret})
-
-    def interpolate(self):
-        for k, v in self.__conf_data.items():
-            if isinstance(v, str):
-                p = re.compile('^ref+([^+]*)://([^+]+)#([^+]+)?$')
-                m = p.match(v)
-                provider_str = m.groups(1)
-                secret_path = m.groups(2)
-                for provider_str, _ in self.__path_map.keys():
-                    if provider_str in self.__path_map.keys():
-                        for k2, v2 in self.__path_map[provider_str].items():
-                            pass
-                        self.__path_map[v].append(k)
-                    elif provider_str == "vault":
-                        role = ""   # TODO: get role from vault
-                        jwt = ""    # TODO: get jwt from vault
-                        cert = ""
-                        client = Vault(role=role, jwt="jwt", cert=cert)
-                        self.__path_map.update({(provider_str, client): {
-                            secret_path: []
-                        }})
-            
-
-    def register_provider(self):
-        pass
-
-    def fetch_data(self):
-        """Fetches all configuration data
-        """
-        for k, v  in self.__path_map.items():
-            if k.group() == "vault": # use match groups for this:
-                for entry in v:
-                    role = ""
-                    jwt = ""
-                    Vault(role=role, jwt=jwt).get(key=entry)
-
-        def interpolate_key(key: Text) -> None:
-            for k, v in self.__conf_data.items():
-                if isinstance(v, str):
-                    if self.regex.match(v):
-                        self.__conf_data[k] = Provider(v)
-                    else: 
-                        continue
-                    
-
+            if m is not None:
+                provider = self.__providers[m.group(1)]
+                for config_key in v:
+                    secret = provider.get(key=config_key, path=m.group(2), filter=m.group(3))
+                    self.__conf_data.update({config_key: secret})
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables

@@ -1,18 +1,18 @@
 from .provider import Provider
 import requests
 from typing import Optional, Tuple
-from dataclasses import dataclass
 import hvac  # type: ignore
 import os
 
-class Vault():
+
+class Vault(Provider):
     def __init__(self,
-                cert: Optional[Tuple] = None,
-                role: Optional[str] = None,
-                jwt: Optional[str] = None,
-                url: Optional[str] = os.environ.get("VAULT_ADDR"),
-                token: Optional[str] = os.environ.get("VAULT_TOKEN"),
-                verify: Optional[bool] = True) -> None:
+                 cert: Optional[Tuple[str, str]] = None,
+                 role: Optional[str] = None,
+                 jwt: Optional[str] = None,
+                 url: Optional[str] = os.environ.get("VAULT_ADDR"),
+                 token: Optional[str] = os.environ.get("VAULT_TOKEN"),
+                 verify: Optional[bool] = True) -> None:
         """Initialized vault client and authenticates vault
 
         Args:
@@ -22,7 +22,6 @@ class Vault():
             auth_config (HVAC_ClientAuthentication): authenticates the initialized vault client
                 with role and jwt string from kubernetes
         """
-        
         self.vault_client = hvac.Client(url=url,
                                         token=token,
                                         cert=cert,
@@ -59,7 +58,7 @@ class Vault():
             if response is None:
                 raise RuntimeError("Gestalt Error: No secrets found")
             requested_data = response['data']['data'] if filter is None else response
-            return requested_data[key]
+            return str(requested_data[key])
         except hvac.exceptions.InvalidPath:
             raise RuntimeError(
                 "Gestalt Error: The secret path or mount is set incorrectly"
@@ -69,16 +68,3 @@ class Vault():
                 "Gestalt Error: Gestalt couldn't connect to Vault")
         except Exception as err:
             raise RuntimeError(f"Gestalt Error: {err}")
-
-    def clear(self, key, value):
-        self.key = key
-        [self.__provider_name, self.path] = value.split("+")[1].split("://")     # split the url
-        try:
-            self.__filter = self.path[1].split("#")[1]   # get the filter
-        except IndexError:
-            self.filter = None
-            self.provider = self.initialize_provider(self.__provider_name)
-            self.value = self.provider.get(self.key, self.path, self.filter)
-
-
-Provider.register(Vault)

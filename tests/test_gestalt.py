@@ -429,6 +429,7 @@ def env_setup():
     os.environ['VAULT_ADDR'] = "http://localhost:8200"
     os.environ['VAULT_TOKEN'] = "myroot"
 
+
 def test_vault_setup(env_setup):
     g = gestalt.Gestalt()
     vault = Vault(role=None, jwt=None)
@@ -451,20 +452,13 @@ def test_vault_interpolation(incorrect_env_setup):
     secret = g.get_string("test_secret")
     assert secret == "test_secret_password"
 
+
 @pytest.fixture(scope="function")
 def secret_setup(env_setup):
     client = hvac.Client()
     client.secrets.kv.v2.create_or_update_secret(
         path="test",
         secret=dict(test_secret="test_secret_password"))
-
-
-
-def test_vault_incorrect_path(env_setup, mount_setup):
-    g = gestalt.Gestalt()
-    g.add_config_file("./tests/testvault/testincorrect.yaml")
-    g.configure_provider("vault", Vault(role=None, jwt=None))
-    g.build_config()
 
 
 @pytest.fixture(scope="function")
@@ -496,4 +490,3 @@ def test_vault_incorrect_path(env_setup, mount_setup):
     g.configure_provider("vault", Vault(role=None, jwt=None))
     with pytest.raises(RuntimeError):
         g.build_config()
-    

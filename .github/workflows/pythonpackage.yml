@@ -54,6 +54,9 @@ jobs:
         codecov
     - name: Typecheck with mypy
       run: |
+        # install any missing types for requirements
+        mypy --intall-types
+        # run mypy strict mode on gestalt
         mypy --strict gestalt
     - name: Style check with yapf
       run: |
