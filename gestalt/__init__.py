@@ -192,9 +192,7 @@ class Gestalt:
     def __interpolate_keys(self) -> None:
         """Interpolates the keys in the configuration data.
         """
-        print(self.__secret_map)
         for path, v in self.__secret_map.items():
-            print(path)
             m = self.regex_pattern.search(path)
             if m is not None:
                 provider = self.__providers[m.group(1)]

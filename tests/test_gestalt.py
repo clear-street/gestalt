@@ -431,10 +431,8 @@ def env_setup():
 
 
 def test_vault_setup(env_setup):
-    g = gestalt.Gestalt()
     vault = Vault(role=None, jwt=None)
-    print(vault)
-    g.configure_provider("vault", vault)
+    assert vault.vault_client.is_authenticated() is True
 
 
 @pytest.fixture(scope="function")
@@ -443,7 +441,7 @@ def incorrect_env_setup():
     os.environ['VAULT_ADDR'] = ""
 
 
-def test_vault_interpolation(incorrect_env_setup):
+def test_vault_interpolation(env_setup):
     g = gestalt.Gestalt()
     g.add_config_file("./tests/testvault/testcorrect.json")
     vault = Vault(role=None, jwt=None)
