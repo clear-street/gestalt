@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name='gestalt-cfg',
-      version='1.0.9',
+      version='1.1.0',
       description='A sensible configuration library for Python',
       long_description=readme(),
       long_description_content_type="text/markdown",

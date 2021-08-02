@@ -13,23 +13,6 @@ else:
     from typing_extensions import TypedDict
 
 
-class CACertClient(NamedTuple):
-    client_cert_path: str
-    client_key_path: str
-
-
-class HVAC_ClientConfig(TypedDict):
-    url: Optional[str]
-    token: str
-    cert: Union[None, CACertClient]
-    verify: Union[None, bool]
-
-
-class HVAC_ClientAuthentication(TypedDict):
-    role: str
-    jwt: str
-
-
 class Gestalt:
     def __init__(self) -> None:
         """ Creates the default configuration manager
@@ -544,9 +527,13 @@ class Gestalt:
         ret.update(self.__conf_sets)
         return str(json.dumps(ret, indent=4))
 
-    def add_vault_config_provider(
-            self, client_config: HVAC_ClientConfig,
-            auth_config: Optional[HVAC_ClientAuthentication]) -> None:
+    def add_vault_config_provider(self,
+                                  url: Optional[str] = None,
+                                  token: Optional[str] = None,
+                                  cert: Optional[str] = None,
+                                  role: Optional[str] = None,
+                                  jwt: Optional[str] = None,
+                                  verify: Optional[bool] = True) -> None:
         """Initialized vault client and authenticates vault
 
         Args:
@@ -556,34 +543,27 @@ class Gestalt:
             auth_config (HVAC_ClientAuthentication): authenticates the initialized vault client
                 with role and jwt string from kubernetes
         """
-        if bool(client_config) == False:
-            raise TypeError("Gestalt Error: client config is empty for Vault")
-        client_config['url'] = os.environ.get("VAULT_ADDR")
-        print(client_config)
-        if not client_config['url']:
-            raise RuntimeError('Gestalt Error: VAULT_ADDR is missing')
-        if client_config['token'] == "":
-            client_config['token'] == os.environ.get("VAULT_TOKEN", "")
-        if client_config['verify']:
-            verify = True
-        else:
-            verify = False
 
-        self.vault_client: hvac.Client = hvac.Client(client_config['url'],
-                                                     client_config['token'],
-                                                     client_config['cert'],
-                                                     verify=verify)
-
-        if auth_config:
+        self.vault_client = hvac.Client(url=url,
+                                        token=token,
+                                        cert=cert,
+                                        verify=verify)
+        try:
+            self.vault_client.is_authenticated()
+        except requests.exceptions.MissingSchema:
+            raise RuntimeError(
+                "Gestalt Error: Incorrect VAULT_ADDR or VAULT_TOKEN provided")
+        if role and jwt:
             try:
                 self.vault_client.auth_kubernetes(\
-                    role=auth_config['role'],
-                    jwt=auth_config['jwt']
+                    role=role,
+                    jwt=jwt
                 )
+            except hvac.exceptions.InvalidPath as err:
+                raise RuntimeError(
+                    "Gestalt Error: Kubernetes auth couldn't be performed")
             except requests.exceptions.ConnectionError as err:
-                print(
-                    "Gestalt Error: Couldn't connect to Vault. Maybe missing VAULT_ADDR?"
-                )
+                raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
     def add_vault_secret_path(self,
                               path: str,
@@ -619,3 +599,5 @@ class Gestalt:
             except requests.exceptions.ConnectionError as err:
                 raise RuntimeError(
                     "Gestalt Error: Gestalt couldn't connect to Vault")
+            except Exception as err:
+                raise RuntimeError(f"Gestalt Error: {err}")

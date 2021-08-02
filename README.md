@@ -237,14 +237,15 @@ The `get` function will raise `TypeError`s in the following cases:
 
 To work with vault, connect gestalt with your vault cluster using:
 
+The default values are picked from the `VAULT_ADDR` and `VAULT_TOKEN` environment for the vault url and token respectively.
+
 ```python
-g.add_vault_config_provider(vault_config, authentication_config)
+g.add_vault_config_provider()
 ```
 
-1. The `vault_config` is a dictionary requiring url, and token
-2. The `authentication_config` is a dictionary with Kubernetes `role` and `jwt`
+In addition to this, some values can be provided such as `url`, `token`, `cert`, `verify` and kubernetes values as `role`, and `jwt`
 
-Raises RuntimeError if the VAULT_ADDR is not set or set incorrectly, or TypeError when client_config is empty.
+Raises RuntimeError if the VAULT_ADDR is not set or set incorrectly.
 
 Second, add a path to the secret for Vault to access the cluster which loads it into the running
 internal data structure configuration. The function `add_vault_secret_path` can consume a
@@ -256,4 +257,4 @@ g.add_vault_secret_path(path="your-secret-pat", mount_path="mount-point")
 
 Lastly, use the `fetch_vault_secret` function to fetch the secrets from your vault cluster.
 
-Raises a RuntimeError, if the path provided in `add_vault_secret_path` is invalid or the mount is invalid
+Raises a RuntimeError, if the path provided in `add_vault_secret_path` is invalid or the mount is invalid or anything else would be a generic Runtime Error
