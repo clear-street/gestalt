@@ -445,8 +445,7 @@ def incorrect_env_setup():
 def secret_setup(env_setup):
     client = hvac.Client()
     client.secrets.kv.v2.create_or_update_secret(
-        path="test",
-        secret=dict(test_secret="test_secret_password"))
+        path="test", secret=dict(test_secret="test_secret_password"))
 
 
 def test_vault_interpolation(secret_setup):

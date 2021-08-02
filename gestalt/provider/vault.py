@@ -33,10 +33,7 @@ class Vault(Provider):
                 "Gestalt Error: Incorrect VAULT_ADDR or VAULT_TOKEN provided")
         if role and jwt:
             try:
-                self.vault_client.auth_kubernetes(
-                    role=role,
-                    jwt=jwt
-                )
+                self.vault_client.auth_kubernetes(role=role, jwt=jwt)
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
                     "Gestalt Error: Kubernetes auth couldn't be performed")
@@ -57,12 +54,12 @@ class Vault(Provider):
             response = self.vault_client.read(path)
             if response is None:
                 raise RuntimeError("Gestalt Error: No secrets found")
-            requested_data = response['data']['data'] if filter is None else response
+            requested_data = response['data'][
+                'data'] if filter is None else response
             return str(requested_data[key])
         except hvac.exceptions.InvalidPath:
             raise RuntimeError(
-                "Gestalt Error: The secret path or mount is set incorrectly"
-            )
+                "Gestalt Error: The secret path or mount is set incorrectly")
         except requests.exceptions.ConnectionError:
             raise RuntimeError(
                 "Gestalt Error: Gestalt couldn't connect to Vault")

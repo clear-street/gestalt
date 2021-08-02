@@ -21,7 +21,8 @@ class Gestalt:
          - Configuration delimiter is '.'
          - No environment variables prefix
         """
-        self.__conf_data: Dict[Text, Union[List[Any], Text, int, bool, float]] = dict()
+        self.__conf_data: Dict[Text, Union[List[Any], Text, int, bool,
+                                           float]] = dict()
         self.__conf_file_name: Text = '*'
         self.__conf_file_paths: List[str] = []
         self.__conf_files: List[str] = []
@@ -34,7 +35,8 @@ class Gestalt:
                                                float]] = dict()
         self.__providers: Dict[str, Provider] = dict()
         self.__secret_map: Dict[str, List[str]] = {}
-        self.regex_pattern = re.compile(r"^ref\+([^\+]*)://([^(\+)]+)\#([^\+]+)?$")
+        self.regex_pattern = re.compile(
+            r"^ref\+([^\+]*)://([^(\+)]+)\#([^\+]+)?$")
 
     def __flatten(
         self,
@@ -164,17 +166,19 @@ class Gestalt:
         for k, v in self.__conf_data.items():
             if not isinstance(v, str):
                 continue
-            m = self.regex_pattern.search(v)  # TODO: Finish this with capture groups in python
+            m = self.regex_pattern.search(v)
             if m is None:
                 continue
             if m.group(1) not in self.__providers:
-                raise RuntimeError("Provider not configured yet expect to be used")
+                raise RuntimeError(
+                    "Provider not configured yet expect to be used")
             if v in self.__secret_map:
                 self.__secret_map[v].append(k)
             else:
                 self.__secret_map.update({v: [k]})
 
-    def configure_provider(self, provider_name: str, provider: Provider) -> None:
+    def configure_provider(self, provider_name: str,
+                           provider: Provider) -> None:
         """Configures a provider for use in the library.
 
         Args:
@@ -197,7 +201,9 @@ class Gestalt:
             if m is not None:
                 provider = self.__providers[m.group(1)]
                 for config_key in v:
-                    secret = provider.get(key=config_key, path=m.group(2), filter=m.group(3))
+                    secret = provider.get(key=config_key,
+                                          path=m.group(2),
+                                          filter=m.group(3))
                     self.__conf_data.update({config_key: secret})
 
     def auto_env(self) -> None:
