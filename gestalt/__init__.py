@@ -1,10 +1,10 @@
-from .provider import Provider
+from .provider import Provider, ProviderConfig, Vault
 import os
 import glob
 import re
 import json
 import collections.abc as collections
-from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
+from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any, Tuple
 import yaml
 
 
@@ -20,8 +20,7 @@ class Gestalt:
          - Configuration delimiter is '.'
          - No environment variables prefix
         """
-        self.__conf_data: Dict[Text, Union[List[Any], Text, int, bool,
-                                           float]] = dict()
+        self.__conf_data: Dict[Text, Union[List[Any], Text, int, bool, float]] = dict()
         self.__conf_file_name: Text = '*'
         self.__conf_file_paths: List[str] = []
         self.__conf_files: List[str] = []
@@ -32,6 +31,7 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
+        self.__path_map: Dict[Tuple[str, Provider], Dict[str, List[str]]] = {}
 
     def __flatten(
         self,
@@ -148,16 +148,73 @@ class Gestalt:
 
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
+
+
         self.interpolate()
+
+
+    def parse_keys(self):
+        for k, v in self.__conf_data.items():
+            # Pattern match
+            # TODO: Implement interpolation from within the config
+            m = re.match(self.__interpolation_pattern, v) # TODO: Finish this with capture groups in python
+            if m.group(1) not in self.__providers:
+                raise RuntimeError("Provider not configured yet expect to be used")
+            if v in self.__secret_map:    
+                self.__secret_map[v].append(k)
+            else:
+                self.__secret_map.update({v: [k]})
+                
+                
+    def configure_provider(self, provider_name: str, config: ProviderConfig):
+        if provider_name == "vault":
+            self.__providers.update({"vault": Vault(config)})
+        else: 
+            raise TypeError("Provider provider is not supported")
+
+    def interpolate_keys(self) -> None:
+        for path, v in self.__secret_map:
+            m = re.match(self.__interpolation_pattern, path)
+            provider = self.__get_provider(m.group(1))
+            secret = provider.get(m.group(2))
+            for config_key in v:
+                self.__conf_data.update({config_key: secret[config_key]})
 
     def interpolate(self):
         for k, v in self.__conf_data.items():
             if isinstance(v, str):
-                if re.match("^ref+.*$", v):
-                    secret = Provider(k, v).value
-                    self.__conf_data.update({k: secret})
-                else:
-                    continue
+                p = re.compile('^ref+([^+]*)://([^+]+)#([^+]+)?$')
+                m = p.match(v)
+                provider_str = m.groups(1)
+                secret_path = m.groups(2)
+                for provider_str, _ in self.__path_map.keys():
+                    if provider_str in self.__path_map.keys():
+                        for k2, v2 in self.__path_map[provider_str].items():
+                            pass
+                        self.__path_map[v].append(k)
+                    elif provider_str == "vault":
+                        role = ""   # TODO: get role from vault
+                        jwt = ""    # TODO: get jwt from vault
+                        cert = ""
+                        client = Vault(role=role, jwt="jwt", cert=cert)
+                        self.__path_map.update({(provider_str, client): {
+                            secret_path: []
+                        }})
+            
+
+    def register_provider(self):
+        pass
+
+    def fetch_data(self):
+        """Fetches all configuration data
+        """
+        for k, v  in self.__path_map.items():
+            if k.group() is "vault": # use match groups for this:
+                for entry in v:
+                    role = ""
+                    jwt = ""
+                    Vault(role=role, jwt=jwt).get(key=entry)
+
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
