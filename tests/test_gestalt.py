@@ -454,7 +454,7 @@ def test_vault_interpolation(secret_setup):
     vault = Vault(role=None, jwt=None)
     g.configure_provider("vault", vault)
     g.build_config()
-    secret = g.get_string("test_secret")
+    secret = g.get_string("test_secret.test_secret")
     assert secret == "test_secret_password"
 
 
@@ -477,7 +477,7 @@ def test_vault_mount_path(env_setup, mount_setup):
     g.add_config_file("./tests/testvault/testmount.json")
     g.configure_provider("vault", Vault(role=None, jwt=None))
     g.build_config()
-    secret = g.get_string("test_mount")
+    secret = g.get_string("test_mount.test_mount")
     assert secret == "test_mount_password"
 
 
@@ -487,3 +487,14 @@ def test_vault_incorrect_path(env_setup, mount_setup):
     g.configure_provider("vault", Vault(role=None, jwt=None))
     with pytest.raises(RuntimeError):
         g.build_config()
+
+
+def test_nest_key_for_vault(env_setup):
+    g = gestalt.Gestalt()
+    g.add_config_file("./tests/testvault/testnested.json")
+    g.configure_provider("vault", Vault(role=None, jwt=None))
+    g.build_config()
+    secret_db = g.get_string("remoteAPI.database.test_secret")
+    secret_slack = g.get_string("remoteAPI.slack.token")
+    assert secret_db == "test_secret_password"
+    assert secret_slack == "random-token"
