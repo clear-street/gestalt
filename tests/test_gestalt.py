@@ -489,7 +489,14 @@ def test_vault_incorrect_path(env_setup, mount_setup):
         g.build_config()
 
 
-def test_nest_key_for_vault(env_setup):
+@pytest.fixture(scope="function")
+def nested_setup(env_setup):
+    client = hvac.Client()
+    client.secrets.kv.v2.create_or_update_secret(
+        path="testnested", secret=dict(slack={"token": "random-token"}))
+
+
+def test_nest_key_for_vault(env_setup, nested_setup):
     g = gestalt.Gestalt()
     g.add_config_file("./tests/testvault/testnested.json")
     g.configure_provider("vault", Vault(role=None, jwt=None))
