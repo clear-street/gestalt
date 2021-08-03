@@ -64,7 +64,7 @@ class Vault(Provider):
         except Exception as err:
             raise RuntimeError(f"Gestalt Error: {err}")
         if filter is None:
-                return requested_data
+            return requested_data
         split_filter = filter.split(".")
         secret = requested_data
         for f in split_filter:
