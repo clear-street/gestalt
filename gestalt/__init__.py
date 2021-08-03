@@ -206,6 +206,9 @@ class Gestalt:
                                           filter=m.group(3))
                     self.__conf_data.update({config_key: secret})
 
+        self.__conf_data = self.__flatten(self.__conf_data,
+                                          sep=self.__delim_char)
+
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
 

@@ -1,6 +1,6 @@
 from .provider import Provider
 import requests
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 import hvac  # type: ignore
 import os
 
@@ -30,7 +30,8 @@ class Vault(Provider):
             self.vault_client.is_authenticated()
         except requests.exceptions.MissingSchema:
             raise RuntimeError(
-                "Gestalt Error: Incorrect VAULT_ADDR or VAULT_TOKEN provided")
+                "Gestalt Error: Unable to connect to vault with the given configuration"
+            )
         if role and jwt:
             try:
                 self.vault_client.auth_kubernetes(role=role, jwt=jwt)
@@ -40,7 +41,7 @@ class Vault(Provider):
             except requests.exceptions.ConnectionError:
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
-    def get(self, key: str, path: str, filter: str) -> str:
+    def get(self, key: str, path: str, filter: str) -> Any:
         """Gets secret from vault
         Args:
             key (str): key to get secret from
@@ -49,14 +50,11 @@ class Vault(Provider):
         Returns:
             secret (str): secret
         """
-
         try:
             response = self.vault_client.read(path)
             if response is None:
                 raise RuntimeError("Gestalt Error: No secrets found")
-            requested_data = response['data'][
-                'data'] if filter is None else response
-            return str(requested_data[key])
+            requested_data = response['data']['data']
         except hvac.exceptions.InvalidPath:
             raise RuntimeError(
                 "Gestalt Error: The secret path or mount is set incorrectly")
@@ -65,3 +63,10 @@ class Vault(Provider):
                 "Gestalt Error: Gestalt couldn't connect to Vault")
         except Exception as err:
             raise RuntimeError(f"Gestalt Error: {err}")
+        if filter is None:
+                return requested_data
+        split_filter = filter.split(".")
+        secret = requested_data
+        for f in split_filter:
+            secret = secret[f]
+        return secret
