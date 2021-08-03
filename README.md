@@ -233,28 +233,24 @@ The `get` function will raise `TypeError`s in the following cases:
 2. The default value does not match the desired type
 3. The configuration has the key with a value of type `a`, when the user desires a value of type `b`
 
-#### Working with Vault
+#### Interpolation
 
-To work with vault, connect gestalt with your vault cluster using:
+Gestalt supports interpolation for the config keys and connect them with the correct provider of the choice.
 
-The default values are picked from the `VAULT_ADDR` and `VAULT_TOKEN` environment for the vault url and token respectively.
+To use the interpolation, each value needs to have three parts
 
-```python
-g.add_vault_config_provider()
+1. Provider
+2. Path
+3. Filter
+
+Provider is a remote provider which is supported by Gestalt. For more information on providers and configuration, please read the following [README](https://github.com/clear-street/gestalt/tree/master/gestalt/provide/README.md)
+
+The interpolation value needs to be set as follows:
+
+```yaml
+key: ref+provider://some-path#filter
 ```
 
-In addition to this, some values can be provided such as `url`, `token`, `cert`, `verify` and kubernetes values as `role`, and `jwt`
+where `provider`, is the name of the provider, `some-path` is the path for the key in your provider and `filter` is the filter that you want to run on the response if the response is a nested object.
 
-Raises RuntimeError if the VAULT_ADDR is not set or set incorrectly.
-
-Second, add a path to the secret for Vault to access the cluster which loads it into the running
-internal data structure configuration. The function `add_vault_secret_path` can consume a
-mount point which, if not provided is set to defualt value.
-
-```python
-g.add_vault_secret_path(path="your-secret-pat", mount_path="mount-point")
-```
-
-Lastly, use the `fetch_vault_secret` function to fetch the secrets from your vault cluster.
-
-Raises a RuntimeError, if the path provided in `add_vault_secret_path` is invalid or the mount is invalid or anything else would be a generic Runtime Error
+The filter is a flattened list with `.` as the generic delimiter in gestalt after flattening.
