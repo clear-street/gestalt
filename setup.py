@@ -17,10 +17,7 @@ setup(name='gestalt-cfg',
       license='MIT',
       packages=['gestalt'],
       python_requires='>=3.6',
-      install_requires=[
-          "PyYAML==5.3.1",
-          "hvac==0.10.9"
-      ],
+      install_requires=["PyYAML==5.3.1", "hvac==0.10.9"],
       classifiers=[
           'Development Status :: 5 - Production/Stable',
           'Intended Audience :: Developers',
