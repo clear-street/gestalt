@@ -1,5 +1,6 @@
 from .provider import Provider
 import requests
+from jsonpath_ng import parse, jsonpath  # type: ignore
 from typing import Optional, Tuple, Any
 import hvac  # type: ignore
 import os
@@ -65,8 +66,11 @@ class Vault(Provider):
             raise RuntimeError(f"Gestalt Error: {err}")
         if filter is None:
             return requested_data
-        split_filter = filter.split(".")
+        filter = "." + filter
         secret = requested_data
-        for f in split_filter:
-            secret = secret[f]
-        return secret
+        jsonpath_expression = parse(f"${filter}")
+        match = jsonpath_expression.find(secret)
+        if len(match) == 0:
+            print("Path returned not matches for your secret")
+        returned_value_from_secret = match[0].value
+        return returned_value_from_secret
