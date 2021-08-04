@@ -1,6 +1,6 @@
 {
     "remoteAPI": {
         "database": "ref+vault://secret/data/test#",
-        "slack": "ref+vault://secret/data/testnested#slack"
+        "slack": "ref+vault://secret/data/testnested#.slack"
     }
 }

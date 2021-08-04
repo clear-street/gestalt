@@ -245,12 +245,14 @@ To use the interpolation, each value needs to have three parts
 
 Provider is a remote provider which is supported by Gestalt. For more information on providers and configuration, please read the following [README](https://github.com/clear-street/gestalt/tree/master/gestalt/provide/README.md)
 
+Providers use JSONPath for proper traversal of the secrets and are standard compliant.
+
 The interpolation value needs to be set as follows:
 
 ```yaml
 key: ref+provider://some-path#filter
 ```
 
-where `provider`, is the name of the provider, `some-path` is the path for the key in your provider and `filter` is the filter that you want to run on the response if the response is a nested object.
+where `provider`, is the name of the provider, `some-path` is the path for the secret in your provider and `filter` is used to travese the key once fectched that you want to run on the response if the response is a nested object.
 
 The filter is a flattened list with `.` as the generic delimiter in gestalt after flattening.
