@@ -1,0 +1,3 @@
+{
+  "test_incorrect": "ref+vault://wrongpath/data/wrongpath"
+}
