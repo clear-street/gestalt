@@ -1,13 +1,12 @@
+from gestalt.vault import Vault
+from gestalt.provider import Provider
 import os
 import glob
-import json
 import collections.abc as collections
-from typing import Dict, List, Tuple, Type, Union, Optional, MutableMapping, Text, Any
+from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 import yaml
-import requests
-import hvac
-import threading
-import time
+import re
+import json
 
 
 class Gestalt:
@@ -34,11 +33,10 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
-        self.__vault_paths: List[Tuple[Union[str, None], str]] = []
-        self.secret_ttl_identifier: List[Tuple[str, int, float]] = []
-        self.TTL_RENEW_INCREMENT: int = 300
-        self.ttl_renew_thread = threading.Thread(
-            name='ttl-renew', target=self.__ttl_expire_check)
+        self.__providers: Dict[str, Provider] = dict()
+        self.__secret_map: Dict[str, List[str]] = {}
+        self.regex_pattern = re.compile(
+            r"^ref\+([^\+]*)://([^(\+)]+)\#([^\+]+)?$")
 
     def __flatten(
         self,
@@ -152,6 +150,61 @@ class Gestalt:
                     raise ValueError(
                         f'File {f} is marked as ".yaml" but cannot be read as such: {e}'
                     )
+
+        self.__conf_data = self.__flatten(self.__conf_data,
+                                          sep=self.__delim_char)
+
+        self.__parse_keys()
+        self.__interpolate_keys()
+
+    def __parse_keys(self) -> None:
+        """Parses the keys in the configuration data.
+
+        Raises:
+            RuntimeError: If the configuration data is not valid
+        """
+        for k, v in self.__conf_data.items():
+            if not isinstance(v, str):
+                continue
+            m = self.regex_pattern.search(v)
+            if m is None:
+                continue
+            if m.group(1) not in self.__providers:
+                raise RuntimeError(
+                    "Provider not configured yet expect to be used")
+            if v in self.__secret_map:
+                self.__secret_map[v].append(k)
+            else:
+                self.__secret_map.update({v: [k]})
+
+    def configure_provider(self, provider_name: str,
+                           provider: Provider) -> None:
+        """Configures a provider for use in the library.
+
+        Args:
+            provider_name (str): The name of the provider to configure
+            provider (Provider): The provider to configure
+
+        Raises:
+            TypeError: If the provider is not an instance of the Provider class
+        """
+        if provider_name == "vault" and isinstance(provider, Vault):
+            self.__providers.update({"vault": provider})
+        else:
+            raise TypeError("Provider provider is not supported")
+
+    def __interpolate_keys(self) -> None:
+        """Interpolates the keys in the configuration data.
+        """
+        for path, v in self.__secret_map.items():
+            m = self.regex_pattern.search(path)
+            if m is not None:
+                provider = self.__providers[m.group(1)]
+                for config_key in v:
+                    secret = provider.get(key=config_key,
+                                          path=m.group(2),
+                                          filter=m.group(3))
+                    self.__conf_data.update({config_key: secret})
 
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
@@ -527,102 +580,3 @@ class Gestalt:
         ret.update(self.__conf_data)
         ret.update(self.__conf_sets)
         return str(json.dumps(ret, indent=4))
-
-    def add_vault_config_provider(self,
-                                  url: Optional[str] = None,
-                                  token: Optional[str] = None,
-                                  cert: Optional[str] = None,
-                                  role: Optional[str] = None,
-                                  jwt: Optional[str] = None,
-                                  verify: Optional[bool] = True) -> None:
-        """Initialized vault client and authenticates vault
-
-        Args:
-            client_config (HVAC_ClientConfig): initializes vault. URL can be set in VAULT_ADDR
-                environment variable, token can be set to VAULT_TOKEN environment variable.
-                These will be picked by default if not set to empty string
-            auth_config (HVAC_ClientAuthentication): authenticates the initialized vault client
-                with role and jwt string from kubernetes
-        """
-
-        self.vault_client = hvac.Client(url=url,
-                                        token=token,
-                                        cert=cert,
-                                        verify=verify)
-        try:
-            self.vault_client.is_authenticated()
-        except requests.exceptions.MissingSchema:
-            raise RuntimeError(
-                "Gestalt Error: Incorrect VAULT_ADDR or VAULT_TOKEN provided")
-        if role and jwt:
-            try:
-                self.vault_client.auth_kubernetes(role=role, jwt=jwt)
-            except hvac.exceptions.InvalidPath:
-                raise RuntimeError(
-                    "Gestalt Error: Kubernetes auth couldn't be performed")
-            except requests.exceptions.ConnectionError:
-                raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
-
-    def add_vault_secret_path(self,
-                              path: str,
-                              mount_path: Optional[str] = None) -> None:
-        """Adds a vault secret with key and path to gestalt
-
-        Args:
-            path (str): The path to the secret in vault cluster
-            mount_path ([type], optional): The mount_path for a non-default secret
-                mount. Defaults to Optional[str].
-        """
-        mount_path = mount_path if mount_path is None else "secret"
-
-        self.__vault_paths.append((mount_path, path))
-
-    def fetch_vault_secrets(self) -> None:
-        """Fetches client secrets from vault first checks the path provided
-        """
-        if len(self.__vault_paths) <= 0:
-            return
-        print("Fetching secrets from VAULT")
-        for vault_path in self.__vault_paths:
-            secret_path = f"{vault_path[0]}/data/{vault_path[1]}"
-            try:
-                secret_token = self.vault_client.read(path=secret_path)
-            except hvac.exceptions.InvalidPath:
-                raise RuntimeError(
-                    "Gestalt Error: The secret path or mount is set incorrectly"
-                )
-            except requests.exceptions.ConnectionError:
-                raise RuntimeError(
-                    "Gestalt Error: Gestalt couldn't connect to Vault")
-            except Exception as err:
-                raise RuntimeError(f"Gestalt Error: {err}")
-
-            if secret_token is None:
-                print("No secrets exist at this path!")
-            elif 'lease_id' in secret_token and secret_token[
-                    'lease_id'] != '':  # dynamic secret from some secrets engine
-                # needs to be stored and ttl renewed
-                secret_lease = (secret_token['lease_id'],
-                                secret_token['lease_duration'], time.time())
-                self.secret_ttl_identifier.append(secret_lease)
-                pass
-            elif secret_token['data']['data']:  # kv2 secrets engine
-                print("Entered here!")
-                self.__conf_data.update(secret_token['data']['data'])
-
-    def __ttl_expire_check(self) -> None:
-        count = 0
-        if os.environ.get("CI"):
-            test_mode = True
-        while (True):
-            if test_mode and count == 5:  # For testing cases the thread will stop after 5 renewals
-                break
-            for lease in self.secret_ttl_identifier:  # Lease Renewal based 2/3 policy of vault
-                if lease[2] - time.time() <= 0.667 * lease[1]:
-                    print('Lease: ', lease[0])
-                    renewed_lease = self.vault_client.sys.renew_lease(
-                        lease_id=lease[0], increment=self.TTL_RENEW_INCREMENT)
-                    lease[2] = renewed_lease["lease_duration"]
-            if test_mode:
-                count += 1
-            time.sleep(1)

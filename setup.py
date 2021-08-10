@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def readme():
@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name='gestalt-cfg',
-      version='1.1.0',
+      version='2.1.0',
       description='A sensible configuration library for Python',
       long_description=readme(),
       long_description_content_type="text/markdown",
@@ -15,8 +15,9 @@ setup(name='gestalt-cfg',
       author='Clear Street',
       author_email='engineering@clearstreet.io',
       license='MIT',
-      packages=['gestalt'],
+      packages=find_packages(),
       python_requires='>=3.6',
+      install_requires=["PyYAML==5.3.1", "hvac==0.10.9", "jsonpath-ng==1.5.3"],
       classifiers=[
           'Development Status :: 5 - Production/Stable',
           'Intended Audience :: Developers',

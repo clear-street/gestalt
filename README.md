@@ -233,35 +233,86 @@ The `get` function will raise `TypeError`s in the following cases:
 2. The default value does not match the desired type
 3. The configuration has the key with a value of type `a`, when the user desires a value of type `b`
 
-#### Working with Vault
+#### Interpolation
 
-Vault handles two types of secrets, static secrets or dynamic secrets
+Gestalt supports interpolation for the config keys and connect them with the correct provider of the choice.
 
-## Static Secrets
+To use the interpolation, each value needs to have three parts
 
-To work with vault, connect gestalt with your vault cluster using:
+1. Provider
+2. Path
+3. Filter
 
-The default values are picked from the `VAULT_ADDR` and `VAULT_TOKEN` environment for the vault url and token respectively.
+Providers use JSONPath for proper traversal of the secrets and are standard compliant.
 
-```python
-g.add_vault_config_provider()
+The interpolation value needs to be set as follows:
+
+```yaml
+key: ref+provider://some-path#filter
 ```
 
-In addition to this, some values can be provided such as `url`, `token`, `cert`, `verify` and kubernetes values as `role`, and `jwt`
+where `provider`, is the name of the provider, `some-path` is the path for the secret in your provider and `filter` is used to travese the key once fectched that you want to run on the response if the response is a nested object.
 
-Raises RuntimeError if the VAULT_ADDR is not set or set incorrectly.
+The filter is a flattened list with `.` as the generic delimiter in gestalt after flattening.
 
-Second, add a path to the secret for Vault to access the cluster which loads it into the running
-internal data structure configuration. The function `add_vault_secret_path` can consume a
-mount point which, if not provided is set to defualt value.
+#### Provider
 
-```python
-g.add_vault_secret_path(path="your-secret-pat", mount_path="mount-point")
+Gestalt allows third party providers to be used in configuration and fetching respective values as per their system.
+
+Working with providers is extremely simple in Gestalt. All that needs to be done is configuration of the provider and gestalt takes care of the rest.
+
+To configure providers, use the `configure_providers` methods. It takes the `provider_name` and the and instance of the class  which is of type `Provider`.
+
+These should be configured before building the config by calling the method `build_config`.
+Eg. The first behaviour is incorrect in case one uses a provider. The second one is correct and recommended
+
+```py
+# incorrect way
+g.build_config()
+g.configure_providers("provider_name", provider)
 ```
 
-Lastly, use the `fetch_vault_secret` function to fetch the secrets from your vault cluster.
+```py
+# correct way
+g.config_providers("provider_name", provider)
+g.build_config()
+```
+
+For more information about the each provider configuration, please read the configuration parameters section for the respective provider.
+
+Gestalt supports the following providers
+
+1. Vault
+
+## Vault Provider
+
+Vault Provider is a provider support from gestalt to hashicorp vault.
+To instatiate your provider, please use `config_provider` method in gestalt.
+Providing the method with a VaultConfig, will configure the provider to connect
+with your instance of Vault wherever it is running whether it be local instance
+or a cloud instance.
 
 Raises a RuntimeError, if the path provided in `add_vault_secret_path` is invalid or the mount is invalid or anything else would be a generic Runtime Error
+
+### Configuration Parameters
+
+VaultConfig is a dataclass of type ProviderClass that takes all the vault configuration needed to
+connect to the vault instance.
+
+VAULT_ADDR and VAULT_TOKEN are two common environment varibales that are set for working with vault. Hence to work and use the default setup, the Gestalt Vault configuration can read the values from those environment variables on your behalf.
+
+Parameter | Datatype | Default | Required |
+---       |   ---    |   ---   | --- |
+| role  | string | None | - [x]
+| jwt | string | None | - [x]
+| url | string | VAULT_ADDR | - [ ]
+| token|string|VAULT_TOKEN | - [ ]
+| cert | Tuple[string, string] | None | - [ ]
+| verify | bool | True | - [ ]
+
+```txt
+For kubernetes authentication, one needs to provide `role` and `jwt` as part of the configuration process.
+```
 
 ## Dynamic Secrets
 

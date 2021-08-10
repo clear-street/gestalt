@@ -63,6 +63,7 @@ jobs:
         codecov
     - name: Typecheck with mypy
       run: |
+        # run mypy strict mode on gestalt
         mypy --strict gestalt
     - name: Style check with yapf
       run: |

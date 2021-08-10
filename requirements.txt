@@ -1,2 +1,3 @@
-PyYAML==5.3.1
+PyYAML==5.4.1
 hvac==0.10.14
+jsonpath-ng==1.5.3
