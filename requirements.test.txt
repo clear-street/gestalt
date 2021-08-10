@@ -8,3 +8,4 @@ codecov==2.0.15
 hvac==0.10.9
 types-requests==2.25.2
 types-PyYAML==5.4.3
+jsonpath-ng==1.5.3

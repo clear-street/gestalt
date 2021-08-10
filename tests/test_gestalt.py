@@ -1,6 +1,6 @@
 # type: ignore
 
-from gestalt.provider.vault import Vault
+from gestalt.vault import Vault
 import pytest
 import os
 import gestalt

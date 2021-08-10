@@ -1,5 +1,5 @@
-from .provider.provider import Provider
-from .provider.vault import Vault
+from gestalt.vault import Vault
+from gestalt.provider import Provider
 import os
 import glob
 import re
