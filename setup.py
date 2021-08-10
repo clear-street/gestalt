@@ -1,4 +1,4 @@
-from setuptools import _install_setup_requires, setup
+from setuptools import setup, find_packages
 
 
 def readme():
@@ -15,7 +15,7 @@ setup(name='gestalt-cfg',
       author='Clear Street',
       author_email='engineering@clearstreet.io',
       license='MIT',
-      packages=['gestalt'],
+      packages=find_packages(),
       python_requires='>=3.6',
       install_requires=["PyYAML==5.3.1", "hvac==0.10.9"],
       classifiers=[
