@@ -505,3 +505,10 @@ def test_nest_key_for_vault(env_setup, nested_setup):
     secret_slack = g.get_string("remoteAPI.slack.token")
     assert secret_db == "test_secret_password"
     assert secret_slack == "random-token"
+
+def test_set_vault_key(env_setup, nested_setup):
+    g = gestalt.Gestalt()
+    g.set_string(key="test", value="ref+vault://secret/data/testnested")
+    g.build_config()
+    secret_db = g.get_string("remoteAPI.database.test_secret")
+    assert secret_db == "test_secret_password"
