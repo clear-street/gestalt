@@ -154,16 +154,17 @@ class Gestalt:
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
 
-        self.__parse_keys()
+        self.__parse_dictionary_keys(self.__conf_data)
+        self.__parse_dictionary_keys(self.__conf_sets)
         self.__interpolate_keys()
 
-    def __parse_keys(self) -> None:
+    def __parse_dictionary_keys(self, dictionary: Dict) -> None:
         """Parses the keys in the configuration data.
 
         Raises:
             RuntimeError: If the configuration data is not valid
         """
-        for k, v in self.__conf_data.items():
+        for k, v in dictionary.items():
             if not isinstance(v, str):
                 continue
             m = self.regex_pattern.search(v)
@@ -176,6 +177,8 @@ class Gestalt:
                 self.__secret_map[v].append(k)
             else:
                 self.__secret_map.update({v: [k]})
+
+
 
     def configure_provider(self, provider_name: str,
                            provider: Provider) -> None:
