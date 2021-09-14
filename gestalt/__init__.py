@@ -159,7 +159,9 @@ class Gestalt:
         self.__parse_dictionary_keys(self.__conf_sets)
         self.__conf_sets = self.__interpolate_keys(self.__conf_sets)
 
-    def __parse_dictionary_keys(self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]) -> None:
+    def __parse_dictionary_keys(
+        self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]
+    ) -> None:
         """Parses the keys in the configuration data.
 
         Raises:
@@ -181,8 +183,6 @@ class Gestalt:
             else:
                 self.__secret_map.update({v: [k]})
 
-
-
     def configure_provider(self, provider_name: str,
                            provider: Provider) -> None:
         """Configures a provider for use in the library.
@@ -199,7 +199,9 @@ class Gestalt:
         else:
             raise TypeError("Provider provider is not supported")
 
-    def __interpolate_keys(self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]) -> Dict[str, Union[List[Any], str, int, bool, float]]:
+    def __interpolate_keys(
+        self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]
+    ) -> Dict[str, Union[List[Any], str, int, bool, float]]:
         """Interpolates the keys in the configuration data.
         """
         for path, v in self.__secret_map.items():
@@ -212,10 +214,8 @@ class Gestalt:
                                           filter=m.group(3))
                     dictionary.update({config_key: secret})
 
-        dictionary = self.__flatten(dictionary,
-                                          sep=self.__delim_char)
+        dictionary = self.__flatten(dictionary, sep=self.__delim_char)
         return dictionary
-
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
