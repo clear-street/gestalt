@@ -159,7 +159,7 @@ class Gestalt:
         self.__parse_dictionary_keys(self.__conf_sets)
         self.__conf_sets = self.__interpolate_keys(self.__conf_sets)
 
-    def __parse_dictionary_keys(self, dictionary: Dict) -> None:
+    def __parse_dictionary_keys(self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]) -> None:
         """Parses the keys in the configuration data.
 
         Raises:
@@ -199,7 +199,7 @@ class Gestalt:
         else:
             raise TypeError("Provider provider is not supported")
 
-    def __interpolate_keys(self, dictionary: Dict) -> None:
+    def __interpolate_keys(self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]) -> Dict[str, Union[List[Any], str, int, bool, float]]:
         """Interpolates the keys in the configuration data.
         """
         for path, v in self.__secret_map.items():
