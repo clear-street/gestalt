@@ -171,9 +171,7 @@ class Gestalt:
             if not isinstance(v, str):
                 continue
             m = self.regex_pattern.search(v)
-            print(m)
             if m is None:
-                print("here")
                 continue
             if m.group(1) not in self.__providers:
                 raise RuntimeError(
@@ -586,5 +584,5 @@ class Gestalt:
         """
         ret: Dict[str, Any] = self.__conf_defaults
         ret.update(self.__conf_data)
-        # ret.update(self.__conf_sets)
+        ret.update(self.__conf_sets)
         return str(json.dumps(ret, indent=4))
