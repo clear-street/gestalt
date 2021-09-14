@@ -155,8 +155,9 @@ class Gestalt:
                                           sep=self.__delim_char)
 
         self.__parse_dictionary_keys(self.__conf_data)
+        self.__conf_data = self.__interpolate_keys(self.__conf_data)
         self.__parse_dictionary_keys(self.__conf_sets)
-        self.__interpolate_keys()
+        self.__conf_sets = self.__interpolate_keys(self.__conf_sets)
 
     def __parse_dictionary_keys(self, dictionary: Dict) -> None:
         """Parses the keys in the configuration data.
@@ -168,7 +169,9 @@ class Gestalt:
             if not isinstance(v, str):
                 continue
             m = self.regex_pattern.search(v)
+            print(m)
             if m is None:
+                print("here")
                 continue
             if m.group(1) not in self.__providers:
                 raise RuntimeError(
@@ -196,7 +199,7 @@ class Gestalt:
         else:
             raise TypeError("Provider provider is not supported")
 
-    def __interpolate_keys(self) -> None:
+    def __interpolate_keys(self, dictionary: Dict) -> None:
         """Interpolates the keys in the configuration data.
         """
         for path, v in self.__secret_map.items():
@@ -207,10 +210,12 @@ class Gestalt:
                     secret = provider.get(key=config_key,
                                           path=m.group(2),
                                           filter=m.group(3))
-                    self.__conf_data.update({config_key: secret})
+                    dictionary.update({config_key: secret})
 
-        self.__conf_data = self.__flatten(self.__conf_data,
+        dictionary = self.__flatten(dictionary,
                                           sep=self.__delim_char)
+        return dictionary
+
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
@@ -581,5 +586,5 @@ class Gestalt:
         """
         ret: Dict[str, Any] = self.__conf_defaults
         ret.update(self.__conf_data)
-        ret.update(self.__conf_sets)
+        # ret.update(self.__conf_sets)
         return str(json.dumps(ret, indent=4))
