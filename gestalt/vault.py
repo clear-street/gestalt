@@ -1,10 +1,11 @@
 from .provider import Provider
 import requests
 from jsonpath_ng import parse  # type: ignore
-from typing import Optional, Tuple, Any
+from typing import Optional, List, Tuple, Any
 import hvac  # type: ignore
+import asyncio
 import os
-
+import threading
 
 class Vault(Provider):
     def __init__(self,
@@ -27,12 +28,21 @@ class Vault(Provider):
                                         token=token,
                                         cert=cert,
                                         verify=verify)
+        
+        self.token_queue = asyncio.Queue(maxsize=0)
+
         try:
             self.vault_client.is_authenticated()
         except requests.exceptions.MissingSchema:
             raise RuntimeError(
                 "Gestalt Error: Unable to connect to vault with the given configuration"
             )
+        
+        secret_ttl_identifier: List[Tuple[str, int, float]] = []
+        TTL_RENEW_INCREMENT: int = 300
+        ttl_renew_thread = threading.Thread(name='ttl-renew', target=asyncio.run, args=(self.worker(),))
+
+        
         if role and jwt:
             try:
                 self.vault_client.auth_kubernetes(role=role, jwt=jwt)
@@ -55,7 +65,11 @@ class Vault(Provider):
             response = self.vault_client.read(path)
             if response is None:
                 raise RuntimeError("Gestalt Error: No secrets found")
+            print(response)
             requested_data = response['data']['data']
+            if response['lease_id']:
+                # Add the lease renewal task to the thread pool
+                self.token_queue.put_nowait(response['lease_id'])
         except hvac.exceptions.InvalidPath:
             raise RuntimeError(
                 "Gestalt Error: The secret path or mount is set incorrectly")
@@ -75,3 +89,27 @@ class Vault(Provider):
         if returned_value_from_secret == "":
             raise RuntimeError("Gestalt Error: Empty secret!")
         return returned_value_from_secret
+
+    async def worker(self):
+        """
+        Worker function to renew lease on expiry
+        """
+        while True:
+            # Get a "work items"  out of the queue
+            lease_id = await self.queue.get()
+
+            try:
+                    self.vault_client.renew_lease(lease_id)
+            except hvac.exceptions.InvalidPath:
+                raise RuntimeError(
+                    "Gestalt Error: The lease path or mount is set incorrectly")
+            except requests.exceptions.ConnectionError:
+                raise RuntimeError(
+                "Gestalt Error: Gestalt couldn't connect to Vault")
+            except Exception as err:
+                raise RuntimeError(f"Gestalt Error: {err}")
+            
+            self.queue.task_done()
+            
+            print(f'{lease_id} has been renewed')
+

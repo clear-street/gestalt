@@ -516,5 +516,5 @@ def test_nest_key_for_vault(env_setup, nested_setup):
     secret_db = g.get_string("remoteAPI.database.test_secret")
     secret_slack = g.get_string("remoteAPI.slack.token")
     assert secret_db == "test_secret_password"
-    assert secret_slack == "random-token"
+    assert secret_slack == "random-token1"
     
