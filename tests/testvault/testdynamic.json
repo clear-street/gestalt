@@ -1,0 +1,3 @@
+{
+    "postgres": "ref+vault://database/creds/my-role#" 
+}

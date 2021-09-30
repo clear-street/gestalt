@@ -1,10 +1,12 @@
 # type: ignore
 
+from requests.packages.urllib3.connection import connection
 from gestalt.vault import Vault
 import pytest
 import os
 import gestalt
 import hvac
+import re
 
 
 # Testing JSON Loading
@@ -516,5 +518,42 @@ def test_nest_key_for_vault(env_setup, nested_setup):
     secret_db = g.get_string("remoteAPI.database.test_secret")
     secret_slack = g.get_string("remoteAPI.slack.token")
     assert secret_db == "test_secret_password"
-    assert secret_slack == "random-token1"
+    assert secret_slack == "random-token"
     
+@pytest.fixture
+async def dynamic_db_setup(env_setup):
+    client = hvac.Client()
+    secrets_engine_list = client.sys.list_mounted_secrets_engines(  
+    )['data'].keys()
+    if "database/" in secrets_engine_list:
+        client.sys.disable_secrets_engine(path="database")
+    client.sys.enable_secrets_engine(
+        backend_type="database",
+        path="database",
+    )
+    client.secrets.database.configure(
+        name="postgres",
+        plugin_name="postgresql-database-plugin",
+        connection_url="postgresql://{{username}}:{{password}}@172.27.0.2:5432/postgres?sslmode=disable",
+        allowed_roles=["my-role"],
+        username="postgres",
+        password="postgres"
+    )
+    client.secrets.database.create_role(
+        name="my-role",
+        db_name="postgres",
+        creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"{{name}}\";",
+        default_ttl="1h",
+        max_ttl="24"
+    )
+    yield client
+
+@pytest.mark.asyncio
+async def test_dynamic_credentials(dynamic_db_setup):
+    g = gestalt.Gestalt()
+    g.add_config_file("./tests/testvault/testdynamic.json")
+    g.configure_provider("vault", Vault(role=None, jwt=None))
+    g.build_config()
+    regex_pattern = re.compile(r"^v-token-*")
+    if regex_pattern.match(g.get_string("postgres.username")):
+        assert True

@@ -45,7 +45,8 @@ class Vault(Provider):
         
         if role and jwt:
             try:
-                self.vault_client.auth_kubernetes(role=role, jwt=jwt)
+                login_response = self.vault_client.auth_kubernetes(role=role, jwt=jwt)
+                print(login_response)
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
                     "Gestalt Error: Kubernetes auth couldn't be performed")
@@ -65,11 +66,12 @@ class Vault(Provider):
             response = self.vault_client.read(path)
             if response is None:
                 raise RuntimeError("Gestalt Error: No secrets found")
-            print(response)
-            requested_data = response['data']['data']
             if response['lease_id']:
                 # Add the lease renewal task to the thread pool
                 self.token_queue.put_nowait(response['lease_id'])
+                requested_data = response["data"]
+            else:
+                requested_data = response['data']['data']
         except hvac.exceptions.InvalidPath:
             raise RuntimeError(
                 "Gestalt Error: The secret path or mount is set incorrectly")
@@ -99,6 +101,7 @@ class Vault(Provider):
             lease_id = await self.queue.get()
 
             try:
+                    ## TODO: When almost expiring in the last couple seconds fetch a new secret instead of renewing. 
                     self.vault_client.renew_lease(lease_id)
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
@@ -111,5 +114,6 @@ class Vault(Provider):
             
             self.queue.task_done()
             
+            self.queue.sleep()
             print(f'{lease_id} has been renewed')
 
