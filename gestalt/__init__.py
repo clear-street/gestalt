@@ -154,16 +154,20 @@ class Gestalt:
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
 
-        self.__parse_keys()
-        self.__interpolate_keys()
+        self.__parse_dictionary_keys(self.__conf_data)
+        self.__conf_data = self.__interpolate_keys(self.__conf_data)
+        self.__parse_dictionary_keys(self.__conf_sets)
+        self.__conf_sets = self.__interpolate_keys(self.__conf_sets)
 
-    def __parse_keys(self) -> None:
+    def __parse_dictionary_keys(
+        self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]
+    ) -> None:
         """Parses the keys in the configuration data.
 
         Raises:
             RuntimeError: If the configuration data is not valid
         """
-        for k, v in self.__conf_data.items():
+        for k, v in dictionary.items():
             if not isinstance(v, str):
                 continue
             m = self.regex_pattern.search(v)
@@ -193,7 +197,9 @@ class Gestalt:
         else:
             raise TypeError("Provider provider is not supported")
 
-    def __interpolate_keys(self) -> None:
+    def __interpolate_keys(
+        self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]
+    ) -> Dict[str, Union[List[Any], str, int, bool, float]]:
         """Interpolates the keys in the configuration data.
         """
         for path, v in self.__secret_map.items():
@@ -204,10 +210,10 @@ class Gestalt:
                     secret = provider.get(key=config_key,
                                           path=m.group(2),
                                           filter=m.group(3))
-                    self.__conf_data.update({config_key: secret})
+                    dictionary.update({config_key: secret})
 
-        self.__conf_data = self.__flatten(self.__conf_data,
-                                          sep=self.__delim_char)
+        dictionary = self.__flatten(dictionary, sep=self.__delim_char)
+        return dictionary
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
