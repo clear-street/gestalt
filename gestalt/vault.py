@@ -13,7 +13,8 @@ class Vault(Provider):
                  jwt: Optional[str] = None,
                  url: Optional[str] = os.environ.get("VAULT_ADDR"),
                  token: Optional[str] = os.environ.get("VAULT_TOKEN"),
-                 verify: Optional[bool] = True) -> None:
+                 verify: Optional[bool] = True,
+                 retry_count: int = 3) -> None:
         """Initialized vault client and authenticates vault
 
         Args:
@@ -34,12 +35,17 @@ class Vault(Provider):
                 "Gestalt Error: Unable to connect to vault with the given configuration"
             )
         if role and jwt:
-            try:
-                self.vault_client.auth_kubernetes(role=role, jwt=jwt)
-            except hvac.exceptions.InvalidPath:
-                raise RuntimeError(
-                    "Gestalt Error: Kubernetes auth couldn't be performed")
-            except requests.exceptions.ConnectionError:
+            while retry_count >= 0:
+                print(retry_count)
+                try:
+                    self.vault_client.auth_kubernetes(role=role, jwt=jwt)
+                    break
+                except hvac.exceptions.InvalidPath:
+                    raise RuntimeError(
+                        "Gestalt Error: Kubernetes auth couldn't be performed, incorrect role or jwt")
+                except requests.exceptions.ConnectionError:
+                    retry_count -= 1
+            if retry_count == 0:
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
     def get(self, key: str, path: str, filter: str) -> Any:
