@@ -40,7 +40,8 @@ class Vault(Provider):
                 raise RuntimeError(
                     "Gestalt Error: Kubernetes auth couldn't be performed")
             except requests.exceptions.ConnectionError:
-                raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
+                print(requests.exceptions.ConnectionError)
+                raise RuntimeError(f"Gestalt Error: Couldn't connect to Vault.")
 
     def get(self, key: str, path: str, filter: str) -> Any:
         """Gets secret from vault
