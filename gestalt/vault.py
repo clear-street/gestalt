@@ -39,8 +39,8 @@ class Vault(Provider):
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
                     "Gestalt Error: Kubernetes auth couldn't be performed")
-            except requests.exceptions.ConnectionError:
-                print(requests.exceptions.ConnectionError)
+            except requests.exceptions.ConnectionError as err:
+                print(f"Connection Error: {err}")
                 raise RuntimeError(f"Gestalt Error: Couldn't connect to Vault.")
 
     def get(self, key: str, path: str, filter: str) -> Any:
