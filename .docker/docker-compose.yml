@@ -1,0 +1,12 @@
+version: '3.7'
+
+services:
+  vault:
+    image: vault
+    ports:
+      # Opens tcp port 6379 on the host and service container
+      - 8200:8200
+    environment:
+      - VAULT_DISABLE_MLOCK=True
+      - VAULT_ADDR=http://localhost:8200
+      - VAULT_DEV_ROOT_TOKEN_ID=myroot
