@@ -115,7 +115,8 @@ class Gestalt:
                 with open(json_file) as jf:
                     try:
                         json_dict = json.load(jf)
-                        self.__conf_data.update(json_dict)
+                        json_dict_flatten = self.__flatten(json_dict)
+                        self.__conf_data.update(json_dict_flatten)
                     except json.JSONDecodeError as e:
                         raise ValueError(
                             f'File {json_file} is marked as ".json" but cannot be read as such: {e}'
@@ -124,7 +125,8 @@ class Gestalt:
                 with open(yaml_file) as yf:
                     try:
                         yaml_dict = yaml.load(yf, Loader=yaml.FullLoader)
-                        self.__conf_data.update(yaml_dict)
+                        yaml_dict_flatten = self.__flatten(yaml_dict)
+                        self.__conf_data.update(yaml_dict_flatten)
                     except yaml.YAMLError as e:
                         raise ValueError(
                             f'File {yaml_file} is marked as ".yaml" but cannot be read as such: {e}'
@@ -146,20 +148,15 @@ class Gestalt:
                 try:
                     with open(f) as yf:
                         yaml_dict = yaml.load(yf, Loader=yaml.FullLoader)
-                        print("Yaml:", yaml_dict)
-                        yaml_dict_flatten = self.__flatten(yaml_dict, self.__delim_char)
+                        yaml_dict_flatten = self.__flatten(yaml_dict)
                         self.__conf_data.update(yaml_dict_flatten)
                 except yaml.YAMLError as e:
                     raise ValueError(
                         f'File {f} is marked as ".yaml" but cannot be read as such: {e}'
                     )
 
-        print("from gestalt:", self.__conf_data)
-
         self.__conf_data = self.__flatten(self.__conf_data,
                                           sep=self.__delim_char)
-
-        print("after flattening:", self.__conf_data)
 
         self.__parse_dictionary_keys(self.__conf_data)
         self.__conf_data = self.__interpolate_keys(self.__conf_data)

@@ -406,6 +406,16 @@ def test_set_default_string_bad_val_override():
         assert 'Overriding default key' in terr
 
 
+def test_override_nested_config():
+    g = gestalt.Gestalt()
+    g.add_config_path('./tests/testoverride/')
+    g.build_config()
+    assert g.get_int("local") == 123456
+    assert g.get_string("nested1.nested2") == "final"
+    assert g.get_string("pg.host") == "dev_host"
+    assert g.get_string("pg.pass") == "def_pass"
+
+
 def test_set_default_bad_type_file_config():
     g = gestalt.Gestalt()
     g.add_config_path('./tests/testdata')
@@ -438,7 +448,6 @@ def test_vault_setup(env_setup):
 @pytest.fixture(scope="function")
 def incorrect_env_setup():
     os.environ['VAULT_ADDR'] = ""
-    os.environ['VAULT_ADDR'] = ""
 
 
 @pytest.fixture(scope="function")
@@ -454,7 +463,6 @@ def test_vault_interpolation(secret_setup):
     vault = Vault(role=None, jwt=None)
     g.configure_provider("vault", vault)
     g.build_config()
-    print(g.dump())
     secret = g.get_string("test_secret.test_secret")
     assert secret == "test_secret_password"
 
@@ -478,9 +486,7 @@ def test_vault_mount_path(env_setup, mount_setup):
     g.add_config_file("./tests/testvault/testmount.json")
     g.configure_provider("vault", Vault(role=None, jwt=None))
     g.build_config()
-    print("config:", g.dump())
     secret = g.get_string("test_mount.test_mount")
-    print("secret:", secret)
     assert secret == "test_mount_password"
 
 
@@ -504,11 +510,8 @@ def test_nest_key_for_vault(env_setup, nested_setup):
     g.add_config_file("./tests/testvault/testnested.json")
     g.configure_provider("vault", Vault(role=None, jwt=None))
     g.build_config()
-    print("config:", g.dump())
     secret_db = g.get_string("remoteAPI.database.test_secret")
     secret_slack = g.get_string("remoteAPI.slack.token")
-    print("secret_db:", secret_db)
-    print("secret_slack:", secret_slack)
     assert secret_db == "test_secret_password"
     assert secret_slack == "random-token"
 
@@ -519,6 +522,5 @@ def test_set_vault_key(env_setup, nested_setup):
     g.set_string(key="test",
                  value="ref+vault://secret/data/testnested#.slack.token")
     g.build_config()
-    print("config:", g.dump())
     secret = g.get_string("test")
     assert secret == "random-token"
