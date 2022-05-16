@@ -414,6 +414,7 @@ def test_override_nested_config():
     assert g.get_string("nested1.nested2") == "final"
     assert g.get_string("pg.host") == "dev_host"
     assert g.get_string("pg.pass") == "def_pass"
+    assert g.get_string("nested1.nested3.nested4.deeplevel") == "nested5"
 
 
 def test_set_default_bad_type_file_config():

@@ -159,7 +159,10 @@ class Gestalt:
         self.__parse_dictionary_keys(self.__conf_sets)
         self.__conf_sets = self.__interpolate_keys(self.__conf_sets)
 
-    def __combine_into(self, d: dict, combined: dict) -> None:
+    def __combine_into(
+        self, d: Dict[Text, Union[List[Any], Text, int, bool, float]],
+        combined: Dict[Text, Union[List[Any], Text, int, bool, float]]
+    ) -> None:
         for k, v in d.items():
             if isinstance(v, dict):
                 self.__combine_into(v, combined.setdefault(k, {}))
