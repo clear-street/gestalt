@@ -129,6 +129,8 @@ Will be rendered to this in the internal data structure:
 
 The nested values are flattened and delimited by periods, making access simpler. **Note**, Gestalt will not normalize names in config files, so keys are case sensitive.
 
+The behaviour of nested dictionary overrides, on key collision, is it updates the dict with non existent keys and overrides the collision keys in the nested dictionary.
+
 ### Environment Variables
 
 Environment variable overrides are not enabled by default. To enable it:

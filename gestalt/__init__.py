@@ -115,8 +115,7 @@ class Gestalt:
                 with open(json_file) as jf:
                     try:
                         json_dict = json.load(jf)
-                        json_dict_flatten = self.__flatten(json_dict)
-                        self.__conf_data.update(json_dict_flatten)
+                        self.__combine_into(json_dict, self.__conf_data)
                     except json.JSONDecodeError as e:
                         raise ValueError(
                             f'File {json_file} is marked as ".json" but cannot be read as such: {e}'
@@ -125,8 +124,7 @@ class Gestalt:
                 with open(yaml_file) as yf:
                     try:
                         yaml_dict = yaml.load(yf, Loader=yaml.FullLoader)
-                        yaml_dict_flatten = self.__flatten(yaml_dict)
-                        self.__conf_data.update(yaml_dict_flatten)
+                        self.__combine_into(yaml_dict, self.__conf_data)
                     except yaml.YAMLError as e:
                         raise ValueError(
                             f'File {yaml_file} is marked as ".yaml" but cannot be read as such: {e}'
@@ -138,8 +136,7 @@ class Gestalt:
                 try:
                     with open(f) as jf:
                         json_dict = json.load(jf)
-                        json_dict_flatten = self.__flatten(json_dict)
-                        self.__conf_data.update(json_dict_flatten)
+                        self.__combine_into(json_dict, self.__conf_data)
                 except json.JSONDecodeError as e:
                     raise ValueError(
                         f'File {f} is marked as ".json" but cannot be read as such: {e}'
@@ -148,8 +145,7 @@ class Gestalt:
                 try:
                     with open(f) as yf:
                         yaml_dict = yaml.load(yf, Loader=yaml.FullLoader)
-                        yaml_dict_flatten = self.__flatten(yaml_dict)
-                        self.__conf_data.update(yaml_dict_flatten)
+                        self.__combine_into(yaml_dict, self.__conf_data)
                 except yaml.YAMLError as e:
                     raise ValueError(
                         f'File {f} is marked as ".yaml" but cannot be read as such: {e}'
@@ -162,6 +158,13 @@ class Gestalt:
         self.__conf_data = self.__interpolate_keys(self.__conf_data)
         self.__parse_dictionary_keys(self.__conf_sets)
         self.__conf_sets = self.__interpolate_keys(self.__conf_sets)
+
+    def __combine_into(self, d: dict, combined: dict) -> None:
+        for k, v in d.items():
+            if isinstance(v, dict):
+                self.__combine_into(v, combined.setdefault(k, {}))
+            else:
+                combined[k] = v
 
     def __parse_dictionary_keys(
         self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]
