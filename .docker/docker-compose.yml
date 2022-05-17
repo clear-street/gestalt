@@ -4,7 +4,7 @@ services:
   vault:
     image: vault
     ports:
-      # Opens tcp port 6379 on the host and service container
+      # Opens tcp port 8200 on the host and service container
       - 8200:8200
     environment:
       - VAULT_DISABLE_MLOCK=True

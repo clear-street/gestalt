@@ -129,7 +129,37 @@ Will be rendered to this in the internal data structure:
 
 The nested values are flattened and delimited by periods, making access simpler. **Note**, Gestalt will not normalize names in config files, so keys are case sensitive.
 
-The behaviour of nested dictionary overrides, on key collision, is it updates the dict with non existent keys and overrides the collision keys in the nested dictionary.
+Nested dictionaries are merged recursively. For example:
+
+```py
+# config1.json file contents.
+{
+  "db": {
+    "name": "fake"
+  },
+  "replicas": 1,
+}
+
+# config2.json file contents.
+{
+  "db": {
+    "name": "mydb",
+    "password": "password"
+  },
+}
+
+g.add_config_file('./config1.json')
+g.add_config_file('./config2.json')
+
+# Merged result.
+{
+  "db": {
+    "name": "mydb",
+    "password": "password"
+  },
+  "replicas": 1,
+}
+```
 
 ### Environment Variables
 
