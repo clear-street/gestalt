@@ -115,7 +115,7 @@ class Gestalt:
                 with open(json_file) as jf:
                     try:
                         json_dict = json.load(jf)
-                        self.__combine_into(json_dict, self.__conf_data)
+                        self.combine_into(json_dict, self.__conf_data)
                     except json.JSONDecodeError as e:
                         raise ValueError(
                             f'File {json_file} is marked as ".json" but cannot be read as such: {e}'
@@ -124,7 +124,7 @@ class Gestalt:
                 with open(yaml_file) as yf:
                     try:
                         yaml_dict = yaml.load(yf, Loader=yaml.FullLoader)
-                        self.__combine_into(yaml_dict, self.__conf_data)
+                        self.combine_into(yaml_dict, self.__conf_data)
                     except yaml.YAMLError as e:
                         raise ValueError(
                             f'File {yaml_file} is marked as ".yaml" but cannot be read as such: {e}'
@@ -136,7 +136,7 @@ class Gestalt:
                 try:
                     with open(f) as jf:
                         json_dict = json.load(jf)
-                        self.__combine_into(json_dict, self.__conf_data)
+                        self.combine_into(json_dict, self.__conf_data)
                 except json.JSONDecodeError as e:
                     raise ValueError(
                         f'File {f} is marked as ".json" but cannot be read as such: {e}'
@@ -145,7 +145,7 @@ class Gestalt:
                 try:
                     with open(f) as yf:
                         yaml_dict = yaml.load(yf, Loader=yaml.FullLoader)
-                        self.__combine_into(yaml_dict, self.__conf_data)
+                        self.combine_into(yaml_dict, self.__conf_data)
                 except yaml.YAMLError as e:
                     raise ValueError(
                         f'File {f} is marked as ".yaml" but cannot be read as such: {e}'
@@ -159,13 +159,13 @@ class Gestalt:
         self.__parse_dictionary_keys(self.__conf_sets)
         self.__conf_sets = self.__interpolate_keys(self.__conf_sets)
 
-    def __combine_into(
+    def combine_into(
         self, d: Dict[Text, Union[List[Any], Text, int, bool, float]],
         combined: Dict[Text, Union[List[Any], Text, int, bool, float]]
     ) -> None:
         for k, v in d.items():
             if isinstance(v, dict):
-                self.__combine_into(v, combined.setdefault(k, {}))
+                self.combine_into(v, combined.setdefault(k, {}))
             else:
                 combined[k] = v
 

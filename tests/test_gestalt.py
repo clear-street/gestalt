@@ -7,6 +7,49 @@ import gestalt
 import hvac
 
 
+# Testing member function
+def test_combined_into():
+    g = gestalt.Gestalt()
+    dictionary = {}
+    dictionary_ = {} 
+    dict1 = {
+        "local": 1234,
+        "pg": {
+            "host": "dict1_pg",
+            "pass": "dict1_pg"
+        }
+    }
+    dict2 = {
+        "local": 1234,
+        "pg": {
+            "host": "dict2_pg"
+        }
+    }
+
+    g.combine_into(dict1, dictionary)
+    g.combine_into(dict2, dictionary)
+
+    g.combine_into(dict2, dictionary_)
+    g.combine_into(dict1, dictionary_)
+
+    assert dictionary == {
+        "local": 1234,
+        "pg": {
+            "host": "dict2_pg",
+            "pass": "dict1_pg"
+        }
+    }
+
+    assert dictionary_ == {
+        "local": 1234,
+        "pg": {
+            "host": "dict1_pg",
+            "pass": "dict1_pg"
+        }
+    }
+
+
+
 # Testing JSON Loading
 def test_loading_json():
     g = gestalt.Gestalt()
