@@ -1,10 +1,51 @@
 # type: ignore
 
 from gestalt.vault import Vault
+from gestalt import merge_into
 import pytest
 import os
 import gestalt
 import hvac
+
+
+# Testing member function
+def test_merge_into():
+    combine1 = {}
+    combine2 = {}
+    combine3 = {"local": 1234, "pg": {"host": "dict1_pg", "pass": "dict1_pg"}}
+    combine4 = {"local": 1234, "pg": {"host": "dict2_pg"}}
+
+    merge_into(combine3, combine1)
+    merge_into(combine4, combine1)
+
+    merge_into(combine4, combine2)
+    merge_into(combine3, combine2)
+
+    assert combine1 == {
+        "local": 1234,
+        "pg": {
+            "host": "dict2_pg",
+            "pass": "dict1_pg"
+        }
+    }
+
+    assert combine2 == {
+        "local": 1234,
+        "pg": {
+            "host": "dict1_pg",
+            "pass": "dict1_pg"
+        }
+    }
+
+
+def test_combine_into_empty_dict():
+    combine = {}
+    merge_into({}, combine)
+    assert combine == {}
+
+    combine = {"local": 1234}
+    merge_into({}, combine)
+    assert combine == {"local": 1234}
 
 
 # Testing JSON Loading
@@ -406,6 +447,17 @@ def test_set_default_string_bad_val_override():
         assert 'Overriding default key' in terr
 
 
+def test_override_nested_config():
+    g = gestalt.Gestalt()
+    g.add_config_path('./tests/testoverride/')
+    g.build_config()
+    assert g.get_int("local") == 123456
+    assert g.get_string("nested1.nested2") == "final"
+    assert g.get_string("pg.host") == "dev_host"
+    assert g.get_string("pg.pass") == "def_pass"
+    assert g.get_string("nested1.nested3.nested4.deeplevel") == "nested5"
+
+
 def test_set_default_bad_type_file_config():
     g = gestalt.Gestalt()
     g.add_config_path('./tests/testdata')
@@ -438,7 +490,6 @@ def test_vault_setup(env_setup):
 @pytest.fixture(scope="function")
 def incorrect_env_setup():
     os.environ['VAULT_ADDR'] = ""
-    os.environ['VAULT_ADDR'] = ""
 
 
 @pytest.fixture(scope="function")
@@ -454,7 +505,6 @@ def test_vault_interpolation(secret_setup):
     vault = Vault(role=None, jwt=None)
     g.configure_provider("vault", vault)
     g.build_config()
-    print(g.dump())
     secret = g.get_string("test_secret.test_secret")
     assert secret == "test_secret_password"
 
@@ -478,9 +528,7 @@ def test_vault_mount_path(env_setup, mount_setup):
     g.add_config_file("./tests/testvault/testmount.json")
     g.configure_provider("vault", Vault(role=None, jwt=None))
     g.build_config()
-    print("config:", g.dump())
     secret = g.get_string("test_mount.test_mount")
-    print("secret:", secret)
     assert secret == "test_mount_password"
 
 
@@ -504,11 +552,8 @@ def test_nest_key_for_vault(env_setup, nested_setup):
     g.add_config_file("./tests/testvault/testnested.json")
     g.configure_provider("vault", Vault(role=None, jwt=None))
     g.build_config()
-    print("config:", g.dump())
     secret_db = g.get_string("remoteAPI.database.test_secret")
     secret_slack = g.get_string("remoteAPI.slack.token")
-    print("secret_db:", secret_db)
-    print("secret_slack:", secret_slack)
     assert secret_db == "test_secret_password"
     assert secret_slack == "random-token"
 
@@ -519,6 +564,5 @@ def test_set_vault_key(env_setup, nested_setup):
     g.set_string(key="test",
                  value="ref+vault://secret/data/testnested#.slack.token")
     g.build_config()
-    print("config:", g.dump())
     secret = g.get_string("test")
     assert secret == "random-token"
