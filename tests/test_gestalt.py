@@ -1,6 +1,7 @@
 # type: ignore
 
 from gestalt.vault import Vault
+from gestalt import merge_into
 import pytest
 import os
 import gestalt
@@ -8,31 +9,19 @@ import hvac
 
 
 # Testing member function
-def test_combined_into():
-    g = gestalt.Gestalt()
-    dictionary = {}
-    dictionary_ = {} 
-    dict1 = {
-        "local": 1234,
-        "pg": {
-            "host": "dict1_pg",
-            "pass": "dict1_pg"
-        }
-    }
-    dict2 = {
-        "local": 1234,
-        "pg": {
-            "host": "dict2_pg"
-        }
-    }
+def test_merge_into():
+    combine1 = {}
+    combine2 = {}
+    combine3 = {"local": 1234, "pg": {"host": "dict1_pg", "pass": "dict1_pg"}}
+    combine4 = {"local": 1234, "pg": {"host": "dict2_pg"}}
 
-    g.combine_into(dict1, dictionary)
-    g.combine_into(dict2, dictionary)
+    merge_into(combine3, combine1)
+    merge_into(combine4, combine1)
 
-    g.combine_into(dict2, dictionary_)
-    g.combine_into(dict1, dictionary_)
+    merge_into(combine4, combine2)
+    merge_into(combine3, combine2)
 
-    assert dictionary == {
+    assert combine1 == {
         "local": 1234,
         "pg": {
             "host": "dict2_pg",
@@ -40,7 +29,7 @@ def test_combined_into():
         }
     }
 
-    assert dictionary_ == {
+    assert combine2 == {
         "local": 1234,
         "pg": {
             "host": "dict1_pg",
@@ -48,6 +37,15 @@ def test_combined_into():
         }
     }
 
+
+def test_combine_into_empty_dict():
+    combine = {}
+    merge_into({}, combine)
+    assert combine == {}
+
+    combine = {"local": 1234}
+    merge_into({}, combine)
+    assert combine == {"local": 1234}
 
 
 # Testing JSON Loading

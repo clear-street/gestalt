@@ -9,6 +9,17 @@ from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 import yaml
 
 
+def merge_into(
+        a: Dict[Text, Union[List[Any], Text, int, bool, float]],
+        b: Dict[Text, Union[List[Any], Text, int, bool, float]]) -> None:
+    """ merge_into merges a into b"""
+    for k, v in a.items():
+        if isinstance(v, dict):
+            merge_into(v, b.setdefault(k, {}))
+        else:
+            b[k] = v
+
+
 class Gestalt:
     def __init__(self) -> None:
         """ Creates the default configuration manager
@@ -115,7 +126,7 @@ class Gestalt:
                 with open(json_file) as jf:
                     try:
                         json_dict = json.load(jf)
-                        self.combine_into(json_dict, self.__conf_data)
+                        merge_into(json_dict, self.__conf_data)
                     except json.JSONDecodeError as e:
                         raise ValueError(
                             f'File {json_file} is marked as ".json" but cannot be read as such: {e}'
@@ -124,7 +135,7 @@ class Gestalt:
                 with open(yaml_file) as yf:
                     try:
                         yaml_dict = yaml.load(yf, Loader=yaml.FullLoader)
-                        self.combine_into(yaml_dict, self.__conf_data)
+                        merge_into(yaml_dict, self.__conf_data)
                     except yaml.YAMLError as e:
                         raise ValueError(
                             f'File {yaml_file} is marked as ".yaml" but cannot be read as such: {e}'
@@ -136,7 +147,7 @@ class Gestalt:
                 try:
                     with open(f) as jf:
                         json_dict = json.load(jf)
-                        self.combine_into(json_dict, self.__conf_data)
+                        merge_into(json_dict, self.__conf_data)
                 except json.JSONDecodeError as e:
                     raise ValueError(
                         f'File {f} is marked as ".json" but cannot be read as such: {e}'
@@ -145,7 +156,7 @@ class Gestalt:
                 try:
                     with open(f) as yf:
                         yaml_dict = yaml.load(yf, Loader=yaml.FullLoader)
-                        self.combine_into(yaml_dict, self.__conf_data)
+                        merge_into(yaml_dict, self.__conf_data)
                 except yaml.YAMLError as e:
                     raise ValueError(
                         f'File {f} is marked as ".yaml" but cannot be read as such: {e}'
@@ -158,16 +169,6 @@ class Gestalt:
         self.__conf_data = self.__interpolate_keys(self.__conf_data)
         self.__parse_dictionary_keys(self.__conf_sets)
         self.__conf_sets = self.__interpolate_keys(self.__conf_sets)
-
-    def combine_into(
-        self, d: Dict[Text, Union[List[Any], Text, int, bool, float]],
-        combined: Dict[Text, Union[List[Any], Text, int, bool, float]]
-    ) -> None:
-        for k, v in d.items():
-            if isinstance(v, dict):
-                self.combine_into(v, combined.setdefault(k, {}))
-            else:
-                combined[k] = v
 
     def __parse_dictionary_keys(
         self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]
