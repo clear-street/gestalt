@@ -5,10 +5,10 @@ def readme():
     with open('README.md') as f:
         return f.read()
 
+
 with open("requirements.txt") as reqs_file:
     reqs = filter(lambda x: not x.startswith("-"), reqs_file.readlines())
     reqs_list = list(map(lambda x: x.rstrip(), reqs))
-
 
 setup(name='gestalt-cfg',
       version='3.0.1',
