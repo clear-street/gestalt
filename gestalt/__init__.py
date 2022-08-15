@@ -10,8 +10,8 @@ import yaml
 
 
 def merge_into(
-        a: Dict[Text, Union[List[Any], Text, int, bool, float]],
-        b: Dict[Text, Union[List[Any], Text, int, bool, float]]) -> None:
+        a: Dict[Text, Union[Dict[str, Any], List[Any], Text, int, bool, float]],
+        b: Dict[Text, Union[Dict[str, Any], List[Any], Text, int, bool, float]]) -> None:
     """ merge_into merges a into b"""
     for k, v in a.items():
         if isinstance(v, dict):
@@ -235,8 +235,8 @@ class Gestalt:
         self.__use_env = True
         self.__env_prefix = ''
 
-    def __set(self, key: str, value: Union[str, int, float, bool, List[Any]],
-              t: Type[Union[str, int, float, bool, List[Any]]]) -> None:
+    def __set(self, key: str, value: Union[str, int, float, bool, List[Any], Dict[str, Any]],
+              t: Type[Union[str, int, float, bool, List[Any], Dict[str, Any]]]) -> None:
         if not isinstance(key, str):
             raise TypeError(f'Given key is not of string type')
         if not isinstance(value, t):
@@ -325,9 +325,22 @@ class Gestalt:
         """
         self.__set(key, value, list)
 
+    def set_dict(self, key: str, value: Dict[str, Any]) -> None:
+        """Set the override dict configuration for a given key
+
+        Args:
+            key (str): The key to override
+            value (dict): The configuration value to store
+
+        Raise:
+            TypeError: If the `key` is not a string or `value` is not of bool type. Also
+            raised if the key sets value for a differint type.
+        """
+        self.__set(key, value, dict)
+
     def __set_default(
-            self, key: str, value: Union[str, int, float, bool, List[Any]],
-            t: Type[Union[str, int, float, bool, List[Any]]]) -> None:
+            self, key: str, value: Union[str, int, float, bool, List[Any], Dict[str, Any]],
+            t: Type[Union[str, int, float, bool, List[Any], Dict[str, Any]]]) -> None:
         if not isinstance(key, str):
             raise TypeError(f'Given key is not of string type')
         if not isinstance(value, t):
@@ -415,6 +428,19 @@ class Gestalt:
             raised if the key sets default for a differing type.
         """
         self.__set_default(key, value, list)
+
+    def set_default_dict(self, key: str, value: Dict[str, Any]) -> None:
+        """Sets the default dict configuration for a given key
+
+        Args:
+            key (str): The key to override
+            value (dict): The configuration value to store
+
+        Raises:
+            TypeError: If the `key` is not a string or `value` is not of dict type. Also
+            raised if the key sets default for a differing type.
+        """
+        self.__set_default(key, value, dict)
 
     def __get(
         self, key: str, default: Optional[Union[str, int, float, bool,
@@ -586,6 +612,33 @@ class Gestalt:
             raise RuntimeError(
                 f'Gestalt error: expected to return list, but got {type(val)}')
         return val
+
+    def get_dict(self,
+                 key: str,
+                 default: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Gets the configuration dict for a given key
+
+        Args:
+            key (str): The key to get
+            default (Optional: dict): Optional default value if a configuration does not exist
+
+        Returns:
+            dict: The dict value at the given `key`
+
+        Raises:
+            TypeError: If the `key` is not a string or `value` is not of dict type. Raised if the
+                environment variable cannot be coalesced to the needed type.
+            ValueError: If the 'key' is not in any configuration and no default is provided
+            RuntimeError: If the internal value was stored with the incorrect type. This indicates
+                a serious library bug
+        """
+        val: Union[Text, int, float, bool,
+                   Dict[str, Any]] = self.__get(key, default, dict)
+        if not isinstance(val, dict):
+            raise RuntimeError(
+                f'Gestalt error: expected to return dict, but got {type(val)}')
+        return val
+    
 
     def dump(self) -> Text:
         """Formats the current set of configurations as a pretty printed JSON string
