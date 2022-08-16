@@ -4,9 +4,8 @@ mypy==0.910
 mypy-extensions==0.4.3
 pytest==5.4.0
 pytest-cov==2.8.1
-codecov==2.0.15
-docker==5.0.0
-hvac==0.10.14
+codecov==2.0.16
+hvac==0.11.2
 types-requests==2.25.2
 types-PyYAML==5.4.6
 jsonpath-ng==1.5.3

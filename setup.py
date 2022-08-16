@@ -6,8 +6,12 @@ def readme():
         return f.read()
 
 
+with open("requirements.txt") as reqs_file:
+    reqs = filter(lambda x: not x.startswith("-"), reqs_file.readlines())
+    reqs_list = list(map(lambda x: x.rstrip(), reqs))
+
 setup(name='gestalt-cfg',
-      version='2.1.0',
+      version='3.1.0',
       description='A sensible configuration library for Python',
       long_description=readme(),
       long_description_content_type="text/markdown",
@@ -17,7 +21,7 @@ setup(name='gestalt-cfg',
       license='MIT',
       packages=find_packages(),
       python_requires='>=3.6',
-      install_requires=["PyYAML==5.4.1", "hvac==0.10.9", "jsonpath-ng==1.5.3"],
+      install_requires=reqs_list,
       classifiers=[
           'Development Status :: 5 - Production/Stable',
           'Intended Audience :: Developers',

@@ -1,0 +1,8 @@
+local: 123
+
+nested1:
+  nested2: final
+
+pg:
+  host: def_host
+  pass: def_pass
