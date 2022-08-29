@@ -9,9 +9,7 @@ from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 import yaml
 
 
-def merge_into(
-        a: Dict[str, Any],
-        b: Dict[str, Any]) -> None:
+def merge_into(a: Dict[str, Any], b: Dict[str, Any]) -> None:
     """ merge_into merges a into b"""
     for k, v in a.items():
         if isinstance(v, dict):
@@ -32,18 +30,19 @@ class Gestalt:
          - Configuration delimiter is '.'
          - No environment variables prefix
         """
-        self.__conf_data: Dict[Text, Union[MutableMapping[str, Any], List[Any], Text, int, bool,
-                                           float]] = dict()
+        self.__conf_data: Dict[Text, Union[MutableMapping[str, Any], List[Any],
+                                           Text, int, bool, float]] = dict()
         self.__conf_file_name: Text = '*'
         self.__conf_file_paths: List[str] = []
         self.__conf_files: List[str] = []
         self.__use_env: bool = False
         self.__env_prefix: Text = ''
         self.__delim_char: Text = '.'
-        self.__conf_sets: Dict[Text, Union[MutableMapping[str, Any], List[Any], Text, int, bool,
-                                           float]] = dict()
-        self.__conf_defaults: Dict[Text, Union[MutableMapping[str, Any], List[Any], Text, int, bool,
-                                               float]] = dict()
+        self.__conf_sets: Dict[Text, Union[MutableMapping[str, Any], List[Any],
+                                           Text, int, bool, float]] = dict()
+        self.__conf_defaults: Dict[Text,
+                                   Union[MutableMapping[str, Any], List[Any],
+                                         Text, int, bool, float]] = dict()
         self.__providers: Dict[str, Provider] = dict()
         self.__secret_map: Dict[str, List[str]] = {}
         self.regex_pattern = re.compile(
@@ -54,7 +53,8 @@ class Gestalt:
         d: MutableMapping[Text, Any],
         parent_key: str = '',
         sep: str = '.'
-    ) -> Dict[Text, Union[MutableMapping[str, Any], List[Any], Text, int, bool, float]]:
+    ) -> Dict[Text, Union[MutableMapping[str, Any], List[Any], Text, int, bool,
+                          float]]:
         items: List[Any] = []
         for k, v in d.items():
             new_key = parent_key + sep + k if parent_key else k
@@ -171,7 +171,8 @@ class Gestalt:
         self.__conf_sets = self.__interpolate_keys(self.__conf_sets)
 
     def __parse_dictionary_keys(
-        self, dictionary: Dict[str, Union[MutableMapping[str, Any], List[Any], str, int, bool, float]]
+        self, dictionary: Dict[str, Union[MutableMapping[str, Any], List[Any],
+                                          str, int, bool, float]]
     ) -> None:
         """Parses the keys in the configuration data.
 
@@ -209,8 +210,10 @@ class Gestalt:
             raise TypeError("Provider provider is not supported")
 
     def __interpolate_keys(
-        self, dictionary: Dict[str, Union[MutableMapping[str, Any], List[Any], str, int, bool, float]]
-    ) -> Dict[str, Union[MutableMapping[str, Any], List[Any], str, int, bool, float]]:
+        self, dictionary: Dict[str, Union[MutableMapping[str, Any], List[Any],
+                                          str, int, bool, float]]
+    ) -> Dict[str, Union[MutableMapping[str, Any], List[Any], str, int, bool,
+                         float]]:
         """Interpolates the keys in the configuration data.
         """
         for path, v in self.__secret_map.items():
@@ -235,8 +238,12 @@ class Gestalt:
         self.__use_env = True
         self.__env_prefix = ''
 
-    def __set(self, key: str, value: Union[str, int, float, bool, List[Any], MutableMapping[str, Any]],
-              t: Type[Union[str, int, float, bool, List[Any], MutableMapping[str, Any]]]) -> None:
+    def __set(
+        self, key: str, value: Union[str, int, float, bool, List[Any],
+                                     MutableMapping[str, Any]],
+        t: Type[Union[str, int, float, bool, List[Any], MutableMapping[str,
+                                                                       Any]]]
+    ) -> None:
         if not isinstance(key, str):
             raise TypeError(f'Given key is not of string type')
         if not isinstance(value, t):
@@ -339,8 +346,10 @@ class Gestalt:
         self.__set(key, value, MutableMapping[str, Any])
 
     def __set_default(
-            self, key: str, value: Union[str, int, float, bool, List[Any], Dict[str, Any]],
-            t: Type[Union[str, int, float, bool, List[Any], Dict[str, Any]]]) -> None:
+        self, key: str, value: Union[str, int, float, bool, List[Any],
+                                     Dict[str, Any]],
+        t: Type[Union[str, int, float, bool, List[Any], Dict[str, Any]]]
+    ) -> None:
         if not isinstance(key, str):
             raise TypeError(f'Given key is not of string type')
         if not isinstance(value, t):
@@ -443,9 +452,11 @@ class Gestalt:
         self.__set_default(key, value, Dict[str, Any])
 
     def __get(
-        self, key: str, 
-        default: Optional[Union[str, int, float, bool, List[Any], MutableMapping[str, Any]]],
-        t: Type[Union[str, int, float, bool, List[Any], MutableMapping[str, Any]]]
+        self, key: str, default: Optional[Union[str, int, float, bool,
+                                                List[Any],
+                                                MutableMapping[str, Any]]],
+        t: Type[Union[str, int, float, bool, List[Any], MutableMapping[str,
+                                                                       Any]]]
     ) -> Union[str, int, float, bool, List[Any], MutableMapping[str, Any]]:
         if not isinstance(key, str):
             raise TypeError(f'Given key is not of string type')
@@ -462,7 +473,7 @@ class Gestalt:
             return val
         if self.__use_env:
             e_key = key.upper().replace(self.__delim_char, '_')
-            if e_key in os.environ:
+            if e_key in os.environ and not t is Dict[str, Any]:
                 try:
                     return t(os.environ[e_key])  #type: ignore
                 except ValueError as e:
@@ -505,8 +516,8 @@ class Gestalt:
             RuntimeError: If the internal value was stored with the incorrect type. This indicates
                 a serious library bug
         """
-        val: Union[Text, int, float, bool,
-                   List[Any], MutableMapping[str, Any]] = self.__get(key, default, str)
+        val: Union[Text, int, float, bool, List[Any],
+                   MutableMapping[str, Any]] = self.__get(key, default, str)
         if not isinstance(val, str):
             raise RuntimeError(
                 f'Gestalt error: expected to return string, but got {type(val)}'
@@ -530,8 +541,8 @@ class Gestalt:
             RuntimeError: If the internal value was stored with the incorrect type. This indicates
                 a serious library bug
         """
-        val: Union[Text, int, float, bool,
-                   List[Any],  MutableMapping[str, Any]] = self.__get(key, default, int)
+        val: Union[Text, int, float, bool, List[Any],
+                   MutableMapping[str, Any]] = self.__get(key, default, int)
         if not isinstance(val, int):
             raise RuntimeError(
                 f'Gestalt error: expected to return string, but got {type(val)}'
@@ -555,8 +566,8 @@ class Gestalt:
             RuntimeError: If the internal value was stored with the incorrect type. This indicates
                 a serious library bug
         """
-        val: Union[Text, int, float, bool,
-                   List[Any],  MutableMapping[str, Any]] = self.__get(key, default, float)
+        val: Union[Text, int, float, bool, List[Any],
+                   MutableMapping[str, Any]] = self.__get(key, default, float)
         if not isinstance(val, float):
             raise RuntimeError(
                 f'Gestalt error: expected to return float, but got {type(val)}'
@@ -580,8 +591,8 @@ class Gestalt:
             RuntimeError: If the internal value was stored with the incorrect type. This indicates
                 a serious library bug
         """
-        val: Union[Text, int, float, bool,
-                   List[Any],  MutableMapping[str, Any]] = self.__get(key, default, bool)
+        val: Union[Text, int, float, bool, List[Any],
+                   MutableMapping[str, Any]] = self.__get(key, default, bool)
         if not isinstance(val, bool):
             raise RuntimeError(
                 f'Gestalt error: expected to return bool, but got {type(val)}')
@@ -606,8 +617,8 @@ class Gestalt:
             RuntimeError: If the internal value was stored with the incorrect type. This indicates
                 a serious library bug
         """
-        val: Union[Text, int, float, bool,
-                   List[Any],  MutableMapping[str, Any]] = self.__get(key, default, list)
+        val: Union[Text, int, float, bool, List[Any],
+                   MutableMapping[str, Any]] = self.__get(key, default, list)
         if not isinstance(val, list):
             raise RuntimeError(
                 f'Gestalt error: expected to return list, but got {type(val)}')
@@ -633,12 +644,13 @@ class Gestalt:
                 a serious library bug
         """
         val: Union[Text, int, float, bool, List[Any],
-                   MutableMapping[str, Any]] = self.__get(key, default, Dict[str, Any])
+                   MutableMapping[str,
+                                  Any]] = self.__get(key, default, Dict[str,
+                                                                        Any])
         if not isinstance(val, dict):
             raise RuntimeError(
                 f'Gestalt error: expected to return dict, but got {type(val)}')
         return val
-    
 
     def dump(self) -> Text:
         """Formats the current set of configurations as a pretty printed JSON string
