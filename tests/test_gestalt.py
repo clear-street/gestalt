@@ -1,5 +1,6 @@
 # type: ignore
 
+from multiprocessing.sharedctypes import Value
 from gestalt.vault import Vault
 from gestalt import merge_into
 import pytest
