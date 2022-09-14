@@ -1,14 +1,15 @@
 from .provider import Provider
 import requests
 from jsonpath_ng import parse  # type: ignore
-from typing import Optional, Tuple, Any
+from typing import Optional, Tuple, Any, Callable
 import hvac  # type: ignore
 import os
 from retry import retry
 
 
+
 class Vault(Provider):
-    @retry(RuntimeError, delay=2, tries=5)
+    @retry(exceptions=RuntimeError, delay=2, tries=5) # type: ignore
     def __init__(self,
                  cert: Optional[Tuple[str, str]] = None,
                  role: Optional[str] = None,
@@ -42,7 +43,7 @@ class Vault(Provider):
                 raise RuntimeError(
                     "Gestalt Error: Kubernetes auth couldn't be performed, incorrect role or jwt")
 
-    @retry(RuntimeError, delay=3, tries=3)
+    @retry(RuntimeError, delay=3, tries=3) # type: ignore
     def get(self, key: str, path: str, filter: str) -> Any:
         """Gets secret from vault
         Args:
