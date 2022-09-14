@@ -4,17 +4,18 @@ from jsonpath_ng import parse  # type: ignore
 from typing import Optional, Tuple, Any
 import hvac  # type: ignore
 import os
+from retry import retry
 
 
 class Vault(Provider):
+    @retry(RuntimeError, delay=2, tries=5)
     def __init__(self,
                  cert: Optional[Tuple[str, str]] = None,
                  role: Optional[str] = None,
                  jwt: Optional[str] = None,
                  url: Optional[str] = os.environ.get("VAULT_ADDR"),
                  token: Optional[str] = os.environ.get("VAULT_TOKEN"),
-                 verify: Optional[bool] = True,
-                 retry_count: int = 3) -> None:
+                 verify: Optional[bool] = True) -> None:
         """Initialized vault client and authenticates vault
 
         Args:
@@ -35,19 +36,13 @@ class Vault(Provider):
                 "Gestalt Error: Unable to connect to vault with the given configuration"
             )
         if role and jwt:
-            while retry_count >= 0:
-                print(retry_count)
-                try:
-                    self.vault_client.auth_kubernetes(role=role, jwt=jwt)
-                    break
-                except hvac.exceptions.InvalidPath:
-                    raise RuntimeError(
-                        "Gestalt Error: Kubernetes auth couldn't be performed, incorrect role or jwt")
-                except requests.exceptions.ConnectionError:
-                    retry_count -= 1
-            if retry_count == 0:
-                raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
+            try:
+                self.vault_client.auth_kubernetes(role=role, jwt=jwt)
+            except hvac.exceptions.InvalidPath:
+                raise RuntimeError(
+                    "Gestalt Error: Kubernetes auth couldn't be performed, incorrect role or jwt")
 
+    @retry(RuntimeError, delay=3, tries=3)
     def get(self, key: str, path: str, filter: str) -> Any:
         """Gets secret from vault
         Args:
