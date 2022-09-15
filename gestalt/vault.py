@@ -7,9 +7,8 @@ import os
 from retry import retry
 
 
-
 class Vault(Provider):
-    @retry(exceptions=RuntimeError, delay=2, tries=5) # type: ignore
+    @retry(exceptions=RuntimeError, delay=2, tries=5)  # type: ignore
     def __init__(self,
                  cert: Optional[Tuple[str, str]] = None,
                  role: Optional[str] = None,
@@ -41,9 +40,10 @@ class Vault(Provider):
                 self.vault_client.auth_kubernetes(role=role, jwt=jwt)
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
-                    "Gestalt Error: Kubernetes auth couldn't be performed, incorrect role or jwt")
+                    "Gestalt Error: Kubernetes auth couldn't be performed, incorrect role or jwt"
+                )
 
-    @retry(RuntimeError, delay=3, tries=3) # type: ignore
+    @retry(RuntimeError, delay=3, tries=3)  # type: ignore
     def get(self, key: str, path: str, filter: str) -> Any:
         """Gets secret from vault
         Args:
