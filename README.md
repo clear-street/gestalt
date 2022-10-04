@@ -182,6 +182,7 @@ Currently, Gestalt supports 5 basic types:
 3. Float
 4. Bool
 5. List
+6. Dict
 
 For each of these types, there is a corresponding `get` and `set` function, allowing for Gestalt to guarantee types.
 
@@ -206,6 +207,7 @@ set_int(key: str, value: int) -> None
 set_float(key: str, value: float) -> None
 set_bool(key: str, value: bool) -> None
 set_list(key: str, value: List[Any]) -> None
+set_dict(key: str, value: Dict[str, Any]) -> None
 ```
 
 Note that all of these functions, in addition from being type hinted, also strongly enforce types, and will raise TypeErrors in the following cases:
@@ -235,6 +237,7 @@ set_default_int(key: str, value: int) -> None
 set_default_float(key: str, value: float) -> None
 set_default_bool(key: str, value: bool) -> None
 set_default_list(key: str, value: List[Any]) -> None
+set_default_dict(key: str, value: Dict[str, Any]) -> None
 ```
 
 Note that all of these functions, in addition from being type hinted, also strongly enforce types, and will raise TypeErrors in the following cases:
