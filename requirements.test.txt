@@ -5,8 +5,8 @@ mypy-extensions==0.4.3
 pytest==5.4.0
 pytest-cov==2.8.1
 codecov==2.0.16
-hvac==0.11.2
+hvac>=1.0.2,<1.1.0
 types-requests==2.25.2
 types-PyYAML==5.4.6
 jsonpath-ng==1.5.3
-pytest-asyncio==0.15.1
+pytest-asyncio==0.19.0
