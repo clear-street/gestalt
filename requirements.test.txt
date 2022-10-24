@@ -8,5 +8,7 @@ codecov==2.0.16
 hvac>=1.0.2,<1.1.0
 types-requests==2.25.2
 types-PyYAML==5.4.6
+retry==0.9.2
+types-retry==0.9.9
 jsonpath-ng==1.5.3
 pytest-asyncio==0.19.0
