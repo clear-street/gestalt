@@ -1,3 +1,5 @@
+from queue import Queue
+from time import sleep
 from .provider import Provider
 import requests
 from jsonpath_ng import parse  # type: ignore
@@ -5,7 +7,7 @@ from typing import Optional, List, Tuple, Any
 import hvac  # type: ignore
 import asyncio
 import os
-import threading
+from threading import Thread
 
 class Vault(Provider):
     def __init__(self,
@@ -24,13 +26,19 @@ class Vault(Provider):
             auth_config (HVAC_ClientAuthentication): authenticates the initialized vault client
                 with role and jwt string from kubernetes
         """
+        self.dynamic_token_queue = asyncio.Queue(maxsize=0)
+        self.kubes_token_queue = asyncio.Queue(maxsize=0)
+
+        dynamic_ttl_renew = Thread(name='dynamic-token-renew', target=asyncio.run, args=(self.worker(self.dynamic_token_queue),))
+        kubernetes_ttl_renew = Thread(name="kubes-token-renew", target=asyncio.run, args=(self.worker(self.kubes_token_queue),))
+        
+        
         self.vault_client = hvac.Client(url=url,
                                         token=token,
                                         cert=cert,
                                         verify=verify)
         
-        self.token_queue = asyncio.Queue(maxsize=0)
-
+        
         try:
             self.vault_client.is_authenticated()
         except requests.exceptions.MissingSchema:
@@ -38,20 +46,21 @@ class Vault(Provider):
                 "Gestalt Error: Unable to connect to vault with the given configuration"
             )
         
-        secret_ttl_identifier: List[Tuple[str, int, float]] = []
-        TTL_RENEW_INCREMENT: int = 300
-        ttl_renew_thread = threading.Thread(name='ttl-renew', target=asyncio.run, args=(self.worker(),))
 
-        
         if role and jwt:
             try:
-                login_response = self.vault_client.auth_kubernetes(role=role, jwt=jwt)
-                print(login_response)
+                hvac.api.auth_methods.Kubernetes(self.vault_client.adapter).login(role=role, jwt=jwt)
+                token = self.vault_client.auth.token.lookup_self()
+                kubes_token = ("kubernetes", token['data']['id'], token['data']['ttl'])
+                self.kubes_token_queue.put(kubes_token)
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
                     "Gestalt Error: Kubernetes auth couldn't be performed")
             except requests.exceptions.ConnectionError:
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
+        
+        dynamic_ttl_renew.start()
+        kubernetes_ttl_renew.start()
 
     def get(self, key: str, path: str, filter: str) -> Any:
         """Gets secret from vault
@@ -67,9 +76,9 @@ class Vault(Provider):
             if response is None:
                 raise RuntimeError("Gestalt Error: No secrets found")
             if response['lease_id']:
-                # Add the lease renewal task to the thread pool
-                self.token_queue.put_nowait(response['lease_id'])
-                requested_data = response["data"]
+                dynamic_token = ("dynamic", response['lease_id'], response['lease_duration'])
+                self.dynamic_token_queue.put_nowait(dynamic_token)
+                requested_data = response["data"]["data"]
             else:
                 requested_data = response['data']['data']
         except hvac.exceptions.InvalidPath:
@@ -92,28 +101,29 @@ class Vault(Provider):
             raise RuntimeError("Gestalt Error: Empty secret!")
         return returned_value_from_secret
 
-    async def worker(self):
+    async def worker(self, token_queue: Queue):
         """
         Worker function to renew lease on expiry
         """
-        while True:
-            # Get a "work items"  out of the queue
-            lease_id = await self.queue.get()
 
-            try:
-                    ## TODO: When almost expiring in the last couple seconds fetch a new secret instead of renewing. 
-                    self.vault_client.renew_lease(lease_id)
-            except hvac.exceptions.InvalidPath:
-                raise RuntimeError(
-                    "Gestalt Error: The lease path or mount is set incorrectly")
-            except requests.exceptions.ConnectionError:
-                raise RuntimeError(
-                "Gestalt Error: Gestalt couldn't connect to Vault")
-            except Exception as err:
-                raise RuntimeError(f"Gestalt Error: {err}")
-            
-            self.queue.task_done()
-            
-            self.queue.sleep()
-            print(f'{lease_id} has been renewed')
-
+        try:
+            while True:
+                if not token_queue.empty():
+                    token_type, token_id, token_duration = token = await token_queue.get()
+                    if token_type == "kubernetes":
+                        self.vault_client.auth.token.renew(token_id)
+                        print("kubernetes token for the app has been renewed")
+                    elif token_type == "dynamic":
+                        self.vault_client.sys.renew_lease(token_id)
+                        print("dynamic token for the app has been renewed")
+                    token_queue.task_done()
+                    token_queue.put_nowait(token)
+                    sleep((token_duration/3)*2)
+        except hvac.exceptions.InvalidPath:
+            raise RuntimeError(
+                "Gestalt Error: The lease path or mount is set incorrectly")
+        except requests.exceptions.ConnectionError:
+            raise RuntimeError(
+            "Gestalt Error: Gestalt couldn't connect to Vault")
+        except Exception as err:
+            raise RuntimeError(f"Gestalt Error: {err}")
