@@ -1,13 +1,14 @@
 # type: ignore
 
-from requests.packages.urllib3.connection import connection
+from unittest.mock import patch, Mock
+
 from gestalt.vault import Vault
 from gestalt import merge_into
+import asyncio
 import pytest
 import os
 import gestalt
 import hvac
-import re
 
 
 # Testing member function
@@ -541,6 +542,7 @@ def test_vault_incorrect_path(env_setup, mount_setup):
     with pytest.raises(RuntimeError):
         g.build_config()
 
+
 @pytest.fixture(scope="function")
 def mount_setup(env_setup):
     client = hvac.Client()
@@ -553,6 +555,7 @@ def mount_setup(env_setup):
         mount_point="test-mount",
         path="test",
         secret=dict(test_mount="test_mount_password"))
+
 
 @pytest.fixture(scope="function")
 def nested_setup(env_setup):
@@ -583,39 +586,114 @@ def test_set_vault_key(env_setup, nested_setup):
 
 
 @pytest.fixture
-async def dynamic_db_setup(env_setup):
-    client = hvac.Client()
-    secrets_engine_list = client.sys.list_mounted_secrets_engines(  
-    )['data'].keys()
-    if "database/" in secrets_engine_list:
-        client.sys.disable_secrets_engine(path="database")
-    client.sys.enable_secrets_engine(
-        backend_type="database",
-        path="database",
-    )
-    client.secrets.database.configure(
-        name="postgres",
-        plugin_name="postgresql-database-plugin",
-        connection_url="postgresql://{{username}}:{{password}}@172.27.0.2:5432/postgres?sslmode=disable",
-        allowed_roles=["my-role"],
-        username="postgres",
-        password="postgres"
-    )
-    client.secrets.database.create_role(
-        name="my-role",
-        db_name="postgres",
-        creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"{{name}}\";",
-        default_ttl="1h",
-        max_ttl="24"
-    )
-    yield client
+def mock_vault_workers():
+    mock_dynamic_renew = Mock()
+    mock_k8s_renew = Mock()
+    patch("gestalt.vault.Thread",
+          side_effect=[mock_dynamic_renew, mock_k8s_renew]).start()
+    return (mock_dynamic_renew, mock_k8s_renew)
+
+
+@pytest.fixture
+def mock_vault_k8s_auth():
+    return patch("gestalt.vault.hvac.api.auth_methods.Kubernetes").start()
+
 
 @pytest.mark.asyncio
-async def test_dynamic_credentials(dynamic_db_setup):
+async def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
+    mock_dynamic_renew, mock_k8s_renew = mock_vault_workers
+
+    mock_sleep = None
+
+    def except_once(self, **kwargs):
+        # side effect used to exit the worker loop after one call
+        if mock_sleep.call_count == 1:
+            raise hvac.exceptions.VaultError("some error")
+
+    with patch("gestalt.vault.sleep", side_effect=except_once,
+               autospec=True) as mock_sleep:
+
+        with patch("gestalt.vault.hvac.Client") as mock_client:
+            v = Vault(role="test-role", jwt="test-jwt")
+
+            mock_k8s_renew.start.assert_called()
+
+            test_token_queue = asyncio.Queue(maxsize=0)
+            await test_token_queue.put(("dynamic", 1, 100))
+
+            with pytest.raises(RuntimeError):
+                await v.worker(test_token_queue)
+
+            mock_sleep.assert_called()
+            mock_client().sys.renew_lease.assert_called()
+            mock_k8s_renew.start.assert_called_once()
+
+            mock_vault_k8s_auth.stop()
+            mock_dynamic_renew.stop()
+            mock_k8s_renew.stop()
+
+
+@pytest.mark.asyncio
+async def test_vault_worker_k8s(mock_vault_workers):
+    mock_dynamic_renew, mock_k8s_renew = mock_vault_workers
+
+    mock_sleep = None
+
+    def except_once(self, **kwargs):
+        # side effect used to exit the worker loop after one call
+        if mock_sleep.call_count == 1:
+            raise hvac.exceptions.VaultError("some error")
+
+    with patch("gestalt.vault.sleep", side_effect=except_once,
+               autospec=True) as mock_sleep:
+        with patch("gestalt.vault.hvac.Client") as mock_client:
+            v = Vault(role="test-role", jwt="test-jwt")
+
+            mock_k8s_renew.start.assert_called()
+
+            test_token_queue = asyncio.Queue(maxsize=0)
+            await test_token_queue.put(("kubernetes", 1, 100))
+
+            with pytest.raises(RuntimeError):
+                await v.worker(test_token_queue)
+
+            mock_sleep.assert_called()
+            mock_client().auth.token.renew.assert_called()
+            mock_k8s_renew.start.assert_called_once()
+
+            mock_dynamic_renew.stop()
+            mock_k8s_renew.stop()
+
+
+@pytest.mark.asyncio
+async def test_vault_start_dynamic_lease(mock_vault_workers):
+    mock_response = {
+        "lease_id": "1",
+        "lease_duration": 5,
+        "data": {
+            "data": "mock_data"
+        }
+    }
+    mock_vault_client_read = patch("gestalt.vault.hvac.Client.read",
+                                   return_value=mock_response).start()
+
+    mock_dynamic_token_queue = Mock()
+    mock_kube_token_queue = Mock()
+    mock_queues = patch(
+        "gestalt.vault.asyncio.Queue",
+        side_effect=[mock_dynamic_token_queue, mock_kube_token_queue]).start()
+
+    v = Vault(role=None, jwt=None)
     g = gestalt.Gestalt()
-    g.add_config_file("./tests/testvault/testdynamic.json")
-    g.configure_provider("vault", Vault(role=None, jwt=None))
+    g.add_config_file("./tests/testvault/testmount.json")
+    g.configure_provider("vault", v)
     g.build_config()
-    regex_pattern = re.compile(r"^v-token-*")
-    if regex_pattern.match(g.get_string("postgres.username")):
-        assert True
+
+    mock_vault_client_read.assert_called()
+    mock_dynamic_token_queue.put_nowait.assert_called()
+
+    mock_vault_client_read.stop()
+    mock_dynamic_token_queue.stop()
+    mock_kube_token_queue.stop()
+    mock_queues.stop()
+    mock_vault_client_read.stop()
