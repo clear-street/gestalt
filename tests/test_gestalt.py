@@ -1,7 +1,10 @@
 # type: ignore
 
+from unittest.mock import patch, Mock
+
 from gestalt.vault import Vault
 from gestalt import merge_into
+import asyncio
 import pytest
 import os
 import gestalt
@@ -541,6 +544,20 @@ def test_vault_incorrect_path(env_setup, mount_setup):
 
 
 @pytest.fixture(scope="function")
+def mount_setup(env_setup):
+    client = hvac.Client()
+    secret_engines_list = client.sys.list_mounted_secrets_engines(
+    )['data'].keys()
+    if "test-mount/" in secret_engines_list:
+        client.sys.disable_secrets_engine(path="test-mount")
+    client.sys.enable_secrets_engine(backend_type="kv", path="test-mount")
+    client.secrets.kv.v2.create_or_update_secret(
+        mount_point="test-mount",
+        path="test",
+        secret=dict(test_mount="test_mount_password"))
+
+
+@pytest.fixture(scope="function")
 def nested_setup(env_setup):
     client = hvac.Client()
     client.secrets.kv.v2.create_or_update_secret(
@@ -566,3 +583,117 @@ def test_set_vault_key(env_setup, nested_setup):
     g.build_config()
     secret = g.get_string("test")
     assert secret == "random-token"
+
+
+@pytest.fixture
+def mock_vault_workers():
+    mock_dynamic_renew = Mock()
+    mock_k8s_renew = Mock()
+    patch("gestalt.vault.Thread",
+          side_effect=[mock_dynamic_renew, mock_k8s_renew]).start()
+    return (mock_dynamic_renew, mock_k8s_renew)
+
+
+@pytest.fixture
+def mock_vault_k8s_auth():
+    return patch("gestalt.vault.hvac.api.auth_methods.Kubernetes").start()
+
+
+@pytest.mark.asyncio
+async def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
+    mock_dynamic_renew, mock_k8s_renew = mock_vault_workers
+
+    mock_sleep = None
+
+    def except_once(self, **kwargs):
+        # side effect used to exit the worker loop after one call
+        if mock_sleep.call_count == 1:
+            raise hvac.exceptions.VaultError("some error")
+
+    with patch("gestalt.vault.sleep", side_effect=except_once,
+               autospec=True) as mock_sleep:
+
+        with patch("gestalt.vault.hvac.Client") as mock_client:
+            v = Vault(role="test-role", jwt="test-jwt")
+
+            mock_k8s_renew.start.assert_called()
+
+            test_token_queue = asyncio.Queue(maxsize=0)
+            await test_token_queue.put(("dynamic", 1, 100))
+
+            with pytest.raises(RuntimeError):
+                await v.worker(test_token_queue)
+
+            mock_sleep.assert_called()
+            mock_client().sys.renew_lease.assert_called()
+            mock_k8s_renew.start.assert_called_once()
+
+            mock_vault_k8s_auth.stop()
+            mock_dynamic_renew.stop()
+            mock_k8s_renew.stop()
+
+
+@pytest.mark.asyncio
+async def test_vault_worker_k8s(mock_vault_workers):
+    mock_dynamic_renew, mock_k8s_renew = mock_vault_workers
+
+    mock_sleep = None
+
+    def except_once(self, **kwargs):
+        # side effect used to exit the worker loop after one call
+        if mock_sleep.call_count == 1:
+            raise hvac.exceptions.VaultError("some error")
+
+    with patch("gestalt.vault.sleep", side_effect=except_once,
+               autospec=True) as mock_sleep:
+        with patch("gestalt.vault.hvac.Client") as mock_client:
+            v = Vault(role="test-role", jwt="test-jwt")
+
+            mock_k8s_renew.start.assert_called()
+
+            test_token_queue = asyncio.Queue(maxsize=0)
+            await test_token_queue.put(("kubernetes", 1, 100))
+
+            with pytest.raises(RuntimeError):
+                await v.worker(test_token_queue)
+
+            mock_sleep.assert_called()
+            mock_client().auth.token.renew.assert_called()
+            mock_k8s_renew.start.assert_called_once()
+
+            mock_dynamic_renew.stop()
+            mock_k8s_renew.stop()
+
+
+@pytest.mark.asyncio
+async def test_vault_start_dynamic_lease(mock_vault_workers):
+    mock_response = {
+        "lease_id": "1",
+        "lease_duration": 5,
+        "data": {
+            "data": "mock_data"
+        }
+    }
+    mock_vault_client_read = patch("gestalt.vault.hvac.Client.read",
+                                   return_value=mock_response).start()
+
+    mock_dynamic_token_queue = Mock()
+    mock_kube_token_queue = Mock()
+    mock_queues = patch(
+        "gestalt.vault.asyncio.Queue",
+        side_effect=[mock_dynamic_token_queue, mock_kube_token_queue]).start()
+
+    v = Vault(role=None, jwt=None)
+    g = gestalt.Gestalt()
+    g.add_config_file("./tests/testvault/testmount.json")
+    g.configure_provider("vault", v)
+    g.build_config()
+
+    mock_vault_client_read.assert_called()
+    mock_dynamic_token_queue.put_nowait.assert_called()
+
+    mock_vault_client_read.stop()
+    mock_dynamic_token_queue.stop()
+    mock_kube_token_queue.stop()
+    mock_queues.stop()
+    mock_vault_client_read.stop()

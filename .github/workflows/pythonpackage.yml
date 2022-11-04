@@ -19,14 +19,23 @@ jobs:
         image: vault
         options: --name vault-test
         ports:
-          # Opens tcp port 6379 on the host and service container
+          # Opens tcp port 8200 on the host and service container
           - 8200:8200
         env:
           VAULT_DISABLE_MLOCK: True
           VAULT_ADDR: http://localhost:8200
           VAULT_DEV_ROOT_TOKEN_ID: myroot
-
-
+      postgres:
+        # Docker Hub image
+        image: postgres
+        options: --name pg13
+        ports:
+          # Opens tcp port 5432 on the host and service container 
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python ${{ matrix.python-version }}

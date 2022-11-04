@@ -324,6 +324,8 @@ Providing the method with a VaultConfig, will configure the provider to connect
 with your instance of Vault wherever it is running whether it be local instance
 or a cloud instance.
 
+Raises a RuntimeError, if the path provided in `add_vault_secret_path` is invalid or the mount is invalid or anything else would be a generic Runtime Error
+
 ### Configuration Parameters
 
 VaultConfig is a dataclass of type ProviderClass that takes all the vault configuration needed to
@@ -343,3 +345,11 @@ Parameter | Datatype | Default | Required |
 ```txt
 For kubernetes authentication, one needs to provide `role` and `jwt` as part of the configuration process.
 ```
+
+## Dynamic Secrets
+
+Currently only dynamic secret support is generation of credentials for database. This database must be pre-configred in vault using either Vault UI or Terraform
+to maintain ease of library.
+
+To get a dynamic secret from the database, use the function `generate_database_dynamic_secret` which will raise Runtime exceptions if the proper setup is not done
+otherwise update gestalt config map with the username and password

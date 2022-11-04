@@ -2,11 +2,11 @@ from gestalt.vault import Vault
 from gestalt.provider import Provider
 import os
 import glob
-import re
-import json
 import collections.abc as collections
 from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 import yaml
+import re
+import json
 
 
 def merge_into(
@@ -44,7 +44,7 @@ class Gestalt:
                                            float]] = dict()
         self.__conf_defaults: Dict[Text, Union[List[Any], Text, int, bool,
                                                float]] = dict()
-        self.__providers: Dict[str, Provider] = dict()
+        self.providers: Dict[str, Provider] = dict()
         self.__secret_map: Dict[str, List[str]] = {}
         self.regex_pattern = re.compile(
             r"^ref\+([^\+]*)://([^(\+)]+)\#([^\+]+)?$")
@@ -184,7 +184,7 @@ class Gestalt:
             m = self.regex_pattern.search(v)
             if m is None:
                 continue
-            if m.group(1) not in self.__providers:
+            if m.group(1) not in self.providers:
                 raise RuntimeError(
                     "Provider not configured yet expect to be used")
             if v in self.__secret_map:
@@ -204,7 +204,7 @@ class Gestalt:
             TypeError: If the provider is not an instance of the Provider class
         """
         if provider_name == "vault" and isinstance(provider, Vault):
-            self.__providers.update({"vault": provider})
+            self.providers.update({"vault": provider})
         else:
             raise TypeError("Provider provider is not supported")
 
@@ -216,7 +216,7 @@ class Gestalt:
         for path, v in self.__secret_map.items():
             m = self.regex_pattern.search(path)
             if m is not None:
-                provider = self.__providers[m.group(1)]
+                provider = self.providers[m.group(1)]
                 for config_key in v:
                     secret = provider.get(key=config_key,
                                           path=m.group(2),
