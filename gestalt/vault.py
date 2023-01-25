@@ -62,10 +62,12 @@ class Vault(Provider):
 
             dynamic_ttl_renew = Thread(name='dynamic-token-renew',
                                        target=asyncio.run,
+                                       daemon=True,
                                        args=(self.worker(
                                            self.dynamic_token_queue), ))
             kubernetes_ttl_renew = Thread(name="kubes-token-renew",
                                           target=asyncio.run,
+                                          daemon=True,
                                           args=(self.worker(
                                               self.kubes_token_queue), ))
             kubernetes_ttl_renew.start()
