@@ -9,6 +9,28 @@ import pytest
 import os
 import gestalt
 import hvac
+import requests
+
+
+class MockSession(requests.Session):
+    def request(self, *_, **__):
+        resp = {'request_id': '230f5e67-e55d-bdae-bd24-c7bc13c1a3e9', 'lease_id': '', 'renewable': False, 'lease_duration': 0, 'data': {'last_vault_rotation': '2023-05-31T14:24:41.724285249Z', 'password': 'foo', 'rotation_period': 60, 'ttl': 0, 'username': 'foo'}, 'wrap_info': None, 'warnings': None, 'auth': None}
+        return MockResponse(resp, 200)
+
+
+class MockResponse:
+    def __init__(self, json_data, status_code):
+        self.json_data = json_data
+        self.status_code = status_code
+        self.ok = True
+
+    def json(self):
+        return self.json_data
+
+
+@pytest.fixture
+def mock_db_role_request(mocker):
+    mocker.patch("requests.Session", MockSession)
 
 
 # Testing member function
@@ -564,6 +586,7 @@ def nested_setup(env_setup):
         path="testnested", secret=dict(slack={"token": "random-token"}))
 
 
+
 def test_nest_key_for_vault(env_setup, nested_setup):
     g = gestalt.Gestalt()
     g.add_config_file("./tests/testvault/testnested.json")
@@ -573,6 +596,15 @@ def test_nest_key_for_vault(env_setup, nested_setup):
     secret_slack = g.get_string("remoteAPI.slack.token")
     assert secret_db == "test_secret_password"
     assert secret_slack == "random-token"
+
+
+def test_read_no_nest_db_role(env_setup, mock_db_role_request):
+    g = gestalt.Gestalt()
+    g.add_config_file("./tests/testvault/testsfdynamic.json")
+    g.configure_provider("vault", Vault(role=None, jwt=None))
+    g.build_config()
+    secret_username = g.get_string("snowflake.username")
+    assert secret_username == "foo"
 
 
 def test_set_vault_key(env_setup, nested_setup):
