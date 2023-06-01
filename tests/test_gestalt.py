@@ -14,7 +14,22 @@ import requests
 
 class MockSession(requests.Session):
     def request(self, *_, **__):
-        resp = {'request_id': '230f5e67-e55d-bdae-bd24-c7bc13c1a3e9', 'lease_id': '', 'renewable': False, 'lease_duration': 0, 'data': {'last_vault_rotation': '2023-05-31T14:24:41.724285249Z', 'password': 'foo', 'rotation_period': 60, 'ttl': 0, 'username': 'foo'}, 'wrap_info': None, 'warnings': None, 'auth': None}
+        resp = {
+            'request_id': '230f5e67-e55d-bdae-bd24-c7bc13c1a3e9',
+            'lease_id': '',
+            'renewable': False,
+            'lease_duration': 0,
+            'data': {
+                'last_vault_rotation': '2023-05-31T14:24:41.724285249Z',
+                'password': 'foo',
+                'rotation_period': 60,
+                'ttl': 0,
+                'username': 'foo'
+            },
+            'wrap_info': None,
+            'warnings': None,
+            'auth': None
+        }
         return MockResponse(resp, 200)
 
 
@@ -584,7 +599,6 @@ def nested_setup(env_setup):
     client = hvac.Client()
     client.secrets.kv.v2.create_or_update_secret(
         path="testnested", secret=dict(slack={"token": "random-token"}))
-
 
 
 def test_nest_key_for_vault(env_setup, nested_setup):
