@@ -60,7 +60,6 @@ jobs:
         VAULT_TOKEN: "myroot"
       run: |
         pytest -s --cov=gestalt tests/*.py
-        codecov
     - name: Typecheck with mypy
       run: |
         # run mypy strict mode on gestalt

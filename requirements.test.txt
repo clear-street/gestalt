@@ -4,7 +4,7 @@ mypy==0.910
 mypy-extensions==0.4.3
 pytest==6.1.0
 pytest-cov==2.8.1
-codecov==2.0.16
+pytest-mock==3.2.0
 hvac>=1.0.2,<1.1.0
 types-requests==2.25.2
 types-PyYAML==5.4.6
