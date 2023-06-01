@@ -90,7 +90,7 @@ class Vault(Provider):
                 dynamic_token = ("dynamic", response['lease_id'],
                                  response['lease_duration'])
                 self.dynamic_token_queue.put_nowait(dynamic_token)
-            requested_data = response["data"]["data"]
+            requested_data = response["data"].get("data", response["data"])
         except hvac.exceptions.InvalidPath:
             raise RuntimeError(
                 "Gestalt Error: The secret path or mount is set incorrectly")
