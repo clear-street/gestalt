@@ -19,3 +19,10 @@ class Provider(metaclass=ABCMeta):
         """Abstract method to get a value from the provider
         """
         pass
+
+    @property
+    @abstractmethod
+    def scheme(self) -> str:
+        """Returns scheme of provider
+        """
+        pass

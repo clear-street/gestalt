@@ -166,9 +166,9 @@ class Gestalt:
                                           sep=self.__delim_char)
 
         self.__parse_dictionary_keys(self.__conf_data)
-        self.__conf_data = self.__interpolate_keys(self.__conf_data)
+        #self.__conf_data = self.__interpolate_keys(self.__conf_data)
         self.__parse_dictionary_keys(self.__conf_sets)
-        self.__conf_sets = self.__interpolate_keys(self.__conf_sets)
+        #self.__conf_sets = self.__interpolate_keys(self.__conf_sets)
 
     def __parse_dictionary_keys(
         self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]
@@ -444,11 +444,29 @@ class Gestalt:
                         f'The environment variable {e_key} could not be converted to type {t}: {e}'
                     )
         if key in self.__conf_data:
-            if not isinstance(self.__conf_data[key], t):
+            print(f"KEY {key} IN CONF DATA")
+            val = self.__conf_data[key]
+            print(f"THE VAL {val}")
+            regex_search = self.regex_pattern.search(val)
+            if regex_search is not None:
+                path = regex_search.group(2)
+                filter_ = regex_search.group(3)
+                for provider in self.providers.values():
+                    if val.startswith(provider.scheme):
+                        interpolated_val = provider.get(key=val,
+                                                        path=path,
+                                                        filter=filter_)
+                        break
+                else:
+                    raise TypeError(f"No scheme found for path {path}.")
+
+            else:
+                interpolated_val = val
+            if not isinstance(interpolated_val, t):
                 raise TypeError(
-                    f'The requested key of {key} is not of type {t} (it is {type(self.__conf_data[key])})'
+                    f'Given set key is not of type {t}, but of type {type(val)}'
                 )
-            return self.__conf_data[key]
+            return interpolated_val
         if default:
             return default
         if key in self.__conf_defaults:
