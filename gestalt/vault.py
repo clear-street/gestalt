@@ -136,7 +136,7 @@ class Vault(Provider):
         secret_expires_dt = self._secret_expiry_times[key]
         is_expired = now >= secret_expires_dt
         if is_expired:
-            logger.debug(f"TTL key {key} found expired.")
+            print(f"TTL key {key} found expired.")
         return is_expired
 
     def _set_secrets_ttl(self, requested_data: Dict, key: str) -> None:
