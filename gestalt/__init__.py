@@ -545,7 +545,7 @@ class Gestalt:
 
     def _get_config_for_key(self,
                             key: str,
-                            key_to_search,
+                            key_to_search: str,
                             default: Optional[Union[str, int, float, bool,List[Any]]],
                             object_type: Type[Union[str, int, float, bool, List[Any]]]) -> Optional[Union[str, int, float, bool, List[Any]]]:
         if key_to_search in self.__conf_sets:
@@ -568,7 +568,7 @@ class Gestalt:
         if key_to_search in self.__conf_data:
             val = self.__conf_data[key_to_search]
             for provider in self.providers.values():
-                if val.startswith(provider.scheme):
+                if isinstance(val, str) and val.startswith(provider.scheme):
                     regex_search = self.regex_pattern.search(val)
                     if regex_search is not None:
                         path = regex_search.group(2)
@@ -602,3 +602,4 @@ class Gestalt:
                     f'Given default set key is not of type {object_type}, but of type {type(val)}'
                 )
             return val
+        return

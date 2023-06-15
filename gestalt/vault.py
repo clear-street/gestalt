@@ -11,7 +11,7 @@ from threading import Thread
 from retry import retry
 
 
-def _get_nested_key(requested_data: Dict, key: str, sep: str) -> Any:
+def _get_nested_key(requested_data: Dict[str, Any], key: str, sep: str) -> Any:
     for nested_key in key.split(sep):
         requested_data = requested_data[nested_key]
     return requested_data
@@ -148,7 +148,7 @@ class Vault(Provider):
             print(f"TTL key {key} found expired.")
         return is_expired
 
-    def _set_secrets_ttl(self, requested_data: Dict, key: str) -> None:
+    def _set_secrets_ttl(self, requested_data: Dict[str, Any], key: str) -> None:
         last_vault_rotation_str = requested_data["last_vault_rotation"].split(".")[0]  # to the nearest second
         last_vault_rotation_dt = datetime.strptime(last_vault_rotation_str, '%Y-%m-%dT%H:%M:%S')
         ttl = requested_data["ttl"]
