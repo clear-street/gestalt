@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Tuple, Dict, Any, Optional, Union, List[Any]
+from typing import Tuple, Dict, Any, Optional, Union, List
 
 
 class Provider(metaclass=ABCMeta):
