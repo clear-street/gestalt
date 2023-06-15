@@ -149,8 +149,7 @@ class Gestalt:
                         f'File {f} is marked as ".yaml" but cannot be read as such: {e}'
                     )
 
-        self.__conf_data = flatten(self.__conf_data,
-                                          sep=self.__delim_char)
+        self.__conf_data = flatten(self.__conf_data, sep=self.__delim_char)
 
         self.__parse_dictionary_keys(self.__conf_data)
         self.__parse_dictionary_keys(self.__conf_sets)
@@ -392,14 +391,17 @@ class Gestalt:
             raise TypeError(f'Given key is not of string type')
         if default and not isinstance(default, t):
             raise TypeError(
-            f'Provided default is of incorrect type {type(default)}, it should be of type {t}'
+                f'Provided default is of incorrect type {type(default)}, it should be of type {t}'
             )
         split_keys = key.split(self.__delim_char)
         consider_keys = list()
         for split_key in split_keys:
             consider_keys.append(split_key)
             joined_key = ".".join(consider_keys)
-            config_val = self._get_config_for_key(key=key, key_to_search=joined_key, default=default, object_type=t)
+            config_val = self._get_config_for_key(key=key,
+                                                  key_to_search=joined_key,
+                                                  default=default,
+                                                  object_type=t)
             if config_val is not None:
                 return config_val
 
@@ -543,11 +545,11 @@ class Gestalt:
         ret.update(self.__conf_sets)
         return str(json.dumps(ret, indent=4))
 
-    def _get_config_for_key(self,
-                            key: str,
-                            key_to_search: str,
-                            default: Optional[Union[str, int, float, bool,List[Any]]],
-                            object_type: Type[Union[str, int, float, bool, List[Any]]]) -> Optional[Union[str, int, float, bool, List[Any]]]:
+    def _get_config_for_key(
+        self, key: str, key_to_search: str,
+        default: Optional[Union[str, int, float, bool, List[Any]]],
+        object_type: Type[Union[str, int, float, bool, List[Any]]]
+    ) -> Optional[Union[str, int, float, bool, List[Any]]]:
         if key_to_search in self.__conf_sets:
             val = self.__conf_sets[key_to_search]
             if not isinstance(val, object_type):

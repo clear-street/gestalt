@@ -26,4 +26,3 @@ def test_get_cache_hit(mock_db_role_request):
     assert result_one == expected and result_two == expected
     assert vault._secret_expiry_times[key] == expected_expiry_time
     assert vault._secret_values[key] == expected
-

@@ -45,7 +45,8 @@ class Vault(Provider):
                                         cert=cert,
                                         verify=verify)
         self._secret_expiry_times: Dict[str, datetime] = dict()
-        self._secret_values: Dict[str, Union[str, int, float, bool, List[Any]]] = dict()
+        self._secret_values: Dict[str, Union[str, int, float, bool,
+                                             List[Any]]] = dict()
 
         try:
             self.vault_client.is_authenticated()
@@ -84,7 +85,13 @@ class Vault(Provider):
             kubernetes_ttl_renew.start()
 
     @retry(RuntimeError, delay=3, tries=3)  # type: ignore
-    def get(self, key: str, path: str, filter: str, sep: Optional[str] = ".") -> Union[str, int, float, bool, List[Any]]:
+    def get(
+        self,
+        key: str,
+        path: str,
+        filter: str,
+        sep: Optional[str] = "."
+    ) -> Union[str, int, float, bool, List[Any]]:
         """Gets secret from vault
         Args:
             key (str): key to get secret from
@@ -100,7 +107,8 @@ class Vault(Provider):
             return self._secret_values[key]
 
         # if the secret can expire but hasn't expired yet
-        if key in self._secret_expiry_times and not self._is_secret_expired(key):
+        if key in self._secret_expiry_times and not self._is_secret_expired(
+                key):
             print(f"Found unexpired TTL key {key}. Not going to Vault.")
             return self._secret_values[key]
 
@@ -148,9 +156,12 @@ class Vault(Provider):
             print(f"TTL key {key} found expired.")
         return is_expired
 
-    def _set_secrets_ttl(self, requested_data: Dict[str, Any], key: str) -> None:
-        last_vault_rotation_str = requested_data["last_vault_rotation"].split(".")[0]  # to the nearest second
-        last_vault_rotation_dt = datetime.strptime(last_vault_rotation_str, '%Y-%m-%dT%H:%M:%S')
+    def _set_secrets_ttl(self, requested_data: Dict[str, Any],
+                         key: str) -> None:
+        last_vault_rotation_str = requested_data["last_vault_rotation"].split(
+            ".")[0]  # to the nearest second
+        last_vault_rotation_dt = datetime.strptime(last_vault_rotation_str,
+                                                   '%Y-%m-%dT%H:%M:%S')
         ttl = requested_data["ttl"]
         secret_expires_dt = last_vault_rotation_dt + timedelta(seconds=ttl)
         self._secret_expiry_times[key] = secret_expires_dt
