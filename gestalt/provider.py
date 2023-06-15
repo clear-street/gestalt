@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Tuple, Dict, Any, Optional, Union
+from typing import Tuple, Dict, Any, Optional, Union, List[Any]
 
 
 class Provider(metaclass=ABCMeta):
@@ -15,7 +15,7 @@ class Provider(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get(self, key: str, path: str, filter: str, sep: Optional[str]) -> Union[str, int, float, bool]:
+    def get(self, key: str, path: str, filter: str, sep: Optional[str]) -> Union[str, int, float, bool, List[Any]]:
         """Abstract method to get a value from the provider
         """
         pass

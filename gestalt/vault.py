@@ -3,7 +3,7 @@ from time import sleep
 from gestalt.provider import Provider
 import requests
 from jsonpath_ng import parse  # type: ignore
-from typing import Optional, Tuple, Any, Dict
+from typing import Optional, Tuple, Any, Dict, Union, List
 import hvac  # type: ignore
 import asyncio
 import os
@@ -84,7 +84,7 @@ class Vault(Provider):
             kubernetes_ttl_renew.start()
 
     @retry(RuntimeError, delay=3, tries=3)  # type: ignore
-    def get(self, key: str, path: str, filter: str, sep: Optional[str] = ".") -> Any:
+    def get(self, key: str, path: str, filter: str, sep: Optional[str] = ".") -> Union[str, int, float, bool, List[Any]]:
         """Gets secret from vault
         Args:
             key (str): key to get secret from
