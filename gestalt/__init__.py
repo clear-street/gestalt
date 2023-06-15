@@ -416,8 +416,6 @@ class Gestalt:
             )
         split_keys = key.split(self.__delim_char)
         consider_keys = list()
-        print(f"CONF DATA {self.__conf_data}")
-        print(f"CONF SETS {self.__conf_sets}")
         for split_key in split_keys:
             consider_keys.append(split_key)
             joined_key = ".".join(consider_keys)
@@ -588,26 +586,21 @@ class Gestalt:
                     )
 
         if key_to_search in self.__conf_data:
-            print(f"KEY {key_to_search} IN CONF DATA")
             val = self.__conf_data[key_to_search]
-            print(f"THE VAL {val}")
             for provider in self.providers.values():
                 if val.startswith(provider.scheme):
                     regex_search = self.regex_pattern.search(val)
                     if regex_search is not None:
                         path = regex_search.group(2)
                         filter_ = regex_search.group(3)
-                        print(f"ORIGINAL KEY {key} cur key {key_to_search}")
                         remainder_filter = key[len(key_to_search):]
                         if len(remainder_filter) > 1:
-                            print("IN REMAINDER KEYS")
                             if filter_ is not None:
                                 filter_ = f".{filter_}{remainder_filter}"
 
                             else:
                                 filter_ = remainder_filter
 
-                        print(f"filter is {filter_}")
                         interpolated_val = provider.get(key=val,
                                                         path=path,
                                                         filter=filter_,
@@ -615,7 +608,6 @@ class Gestalt:
                         break
             else:
                 interpolated_val = val
-            print(f"{interpolated_val=}")
             if not isinstance(interpolated_val, object_type):
                 raise TypeError(
                     f'Given set key is not of type {object_type}, but of type {type(interpolated_val)}'
