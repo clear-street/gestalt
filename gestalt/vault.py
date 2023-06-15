@@ -45,7 +45,7 @@ class Vault(Provider):
                                         cert=cert,
                                         verify=verify)
         self._secret_expiry_times: Dict[str, datetime] = dict()
-        self._secret_values: Dict[str, Any] = dict()
+        self._secret_values: Dict[str, Union[str, int, float, bool, List[Any]]] = dict()
 
         try:
             self.vault_client.is_authenticated()
