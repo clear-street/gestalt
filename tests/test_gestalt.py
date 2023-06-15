@@ -630,6 +630,7 @@ async def test_vault_start_dynamic_lease(mock_vault_workers):
     g.add_config_file("./tests/testvault/testmount.json")
     g.configure_provider("vault", v)
     g.build_config()
+    g.get_string("test_mount")
 
     mock_vault_client_read.assert_called()
     mock_dynamic_token_queue.put_nowait.assert_called()

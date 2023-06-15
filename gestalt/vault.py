@@ -138,8 +138,6 @@ class Vault(Provider):
         if "ttl" in requested_data:
             self._set_secrets_ttl(requested_data, key)
 
-        print(f"THE RETURNED VALUE FROM SECRET {returned_value_from_secret}")
-
         return returned_value_from_secret
 
     def _is_secret_expired(self, key: str) -> bool:

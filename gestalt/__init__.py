@@ -153,9 +153,7 @@ class Gestalt:
                                           sep=self.__delim_char)
 
         self.__parse_dictionary_keys(self.__conf_data)
-        # self.__conf_data = self.__interpolate_keys(self.__conf_data)
         self.__parse_dictionary_keys(self.__conf_sets)
-        # self.__conf_sets = self.__interpolate_keys(self.__conf_sets)
 
     def __parse_dictionary_keys(
         self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]
@@ -194,24 +192,6 @@ class Gestalt:
             self.providers.update({"vault": provider})
         else:
             raise TypeError("Provider provider is not supported")
-
-    def __interpolate_keys(
-        self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]
-    ) -> Dict[str, Union[List[Any], str, int, bool, float]]:
-        """Interpolates the keys in the configuration data.
-        """
-        for path, v in self.__secret_map.items():
-            m = self.regex_pattern.search(path)
-            if m is not None:
-                provider = self.providers[m.group(1)]
-                for config_key in v:
-                    secret = provider.get(key=config_key,
-                                          path=m.group(2),
-                                          filter=m.group(3))
-                    dictionary.update({config_key: secret})
-
-        dictionary = flatten(dictionary, sep=self.__delim_char)
-        return dictionary
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
