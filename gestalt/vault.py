@@ -130,7 +130,7 @@ class Vault(Provider):
         match = jsonpath_expression.find(secret)
         if len(match) == 0:
             print("Path returned not matches for your secret")
-        returned_value_from_secret = match[0].value
+        returned_value_from_secret: Union[str, int, float, bool, List[Any]] = match[0].value
         if returned_value_from_secret == "":
             raise RuntimeError("Gestalt Error: Empty secret!")
 
