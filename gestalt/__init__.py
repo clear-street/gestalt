@@ -602,4 +602,4 @@ class Gestalt:
                     f'Given default set key is not of type {object_type}, but of type {type(val)}'
                 )
             return val
-        return
+        return None
