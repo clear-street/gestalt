@@ -78,9 +78,9 @@ def nested_setup():
 def mock_vault_workers():
     mock_dynamic_renew = Mock()
     mock_k8s_renew = Mock()
-    patch("gestalt.vault.Thread",
-          side_effect=[mock_dynamic_renew, mock_k8s_renew]).start()
-    return (mock_dynamic_renew, mock_k8s_renew)
+    with patch("gestalt.vault.Thread",
+                side_effect=[mock_dynamic_renew, mock_k8s_renew]):
+        yield (mock_dynamic_renew, mock_k8s_renew)
 
 
 @pytest.fixture
