@@ -1,4 +1,4 @@
-from gestalt.vault import Vault
+from gestalt.vault import Vault  # noqa: E999
 from gestalt.provider import Provider
 import os
 import glob
