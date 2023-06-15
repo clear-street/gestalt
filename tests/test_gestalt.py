@@ -570,7 +570,6 @@ async def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
             mock_client().sys.renew_lease.assert_called()
             mock_k8s_renew.start.assert_called_once()
 
-            mock_vault_k8s_auth.stop()
             mock_dynamic_renew.stop()
             mock_k8s_renew.stop()
 
@@ -622,22 +621,23 @@ async def test_vault_start_dynamic_lease(mock_vault_workers):
     with mock_vault_client_patch as mock_vault_client_read:
         mock_dynamic_token_queue = Mock()
         mock_kube_token_queue = Mock()
-        mock_queues = patch(
-            "gestalt.vault.asyncio.Queue",
-            side_effect=[mock_dynamic_token_queue, mock_kube_token_queue]).start()
+        with patch(
+                "gestalt.vault.asyncio.Queue",
+                side_effect=[mock_dynamic_token_queue,
+                             mock_kube_token_queue]) as mock_queues:
 
-        v = Vault(role=None, jwt=None)
-        g = gestalt.Gestalt()
-        g.add_config_file("./tests/testvault/testmount.json")
-        g.configure_provider("vault", v)
-        g.build_config()
-        g.get_string("test_mount")
+            v = Vault(role=None, jwt=None)
+            g = gestalt.Gestalt()
+            g.add_config_file("./tests/testvault/testmount.json")
+            g.configure_provider("vault", v)
+            g.build_config()
+            g.get_string("test_mount")
 
-        mock_vault_client_read.assert_called()
-        mock_dynamic_token_queue.put_nowait.assert_called()
+            mock_vault_client_read.assert_called()
+            mock_dynamic_token_queue.put_nowait.assert_called()
 
-        mock_vault_client_read.stop()
-        mock_dynamic_token_queue.stop()
-        mock_kube_token_queue.stop()
-        mock_queues.stop()
-        mock_vault_client_read.stop()
+            mock_vault_client_read.stop()
+            mock_dynamic_token_queue.stop()
+            mock_kube_token_queue.stop()
+            mock_queues.stop()
+            mock_vault_client_read.stop()
