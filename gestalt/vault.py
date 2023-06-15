@@ -130,7 +130,7 @@ class Vault(Provider):
         match = jsonpath_expression.find(secret)
         if len(match) == 0:
             print("Path returned not matches for your secret")
-        returned_value_from_secret: Union[str, int, float, bool, List[Any]] = match[0].value
+        returned_value_from_secret = match[0].value
         if returned_value_from_secret == "":
             raise RuntimeError("Gestalt Error: Empty secret!")
 
@@ -138,7 +138,7 @@ class Vault(Provider):
         if "ttl" in requested_data:
             self._set_secrets_ttl(requested_data, key)
 
-        return returned_value_from_secret
+        return returned_value_from_secret  # type: ignore
 
     def _is_secret_expired(self, key: str) -> bool:
         now = datetime.now()
