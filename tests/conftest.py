@@ -84,5 +84,5 @@ def mock_vault_workers():
 
 
 @pytest.fixture
-def mock_vault_k8s_auth():
-    return patch("gestalt.vault.hvac.api.auth_methods.Kubernetes").start()
+def mock_vault_k8s_auth(mocker):
+    mocker.patch("gestalt.vault.hvac.api.auth_methods.Kubernetes")
