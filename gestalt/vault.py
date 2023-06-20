@@ -11,12 +11,6 @@ from threading import Thread
 from retry import retry
 
 
-def _get_nested_key(requested_data: Dict[str, Any], key: str, sep: str) -> Any:
-    for nested_key in key.split(sep):
-        requested_data = requested_data[nested_key]
-    return requested_data
-
-
 class Vault(Provider):
     @retry(exceptions=RuntimeError, delay=2, tries=5)  # type: ignore
     def __init__(self,
@@ -103,13 +97,11 @@ class Vault(Provider):
         """
         # if the key has been read before and is not a TTL secret
         if key in self._secret_values and key not in self._secret_expiry_times:
-            print(f"Found key {key} in cache with no TTL. Not going to Vault.")
             return self._secret_values[key]
 
         # if the secret can expire but hasn't expired yet
         if key in self._secret_expiry_times and not self._is_secret_expired(
                 key):
-            print(f"Found unexpired TTL key {key}. Not going to Vault.")
             return self._secret_values[key]
 
         try:
@@ -130,8 +122,6 @@ class Vault(Provider):
         except Exception as err:
             raise RuntimeError(f"Gestalt Error: {err}")
         if filter is None:
-            # if len(key.split(sep)) > 1:
-            #     return _get_nested_key(requested_data, key, sep)
             return requested_data
         secret = requested_data
         jsonpath_expression = parse(f"${filter}")
@@ -152,8 +142,6 @@ class Vault(Provider):
         now = datetime.now()
         secret_expires_dt = self._secret_expiry_times[key]
         is_expired = now >= secret_expires_dt
-        if is_expired:
-            print(f"TTL key {key} found expired.")
         return is_expired
 
     def _set_secrets_ttl(self, requested_data: Dict[str, Any],
