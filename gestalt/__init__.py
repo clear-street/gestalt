@@ -397,7 +397,7 @@ class Gestalt:
         consider_keys = list()
         for split_key in split_keys:
             consider_keys.append(split_key)
-            joined_key = ".".join(consider_keys)
+            joined_key = self.__delim_char.join(consider_keys)
             config_val = self._get_config_for_key(key=key,
                                                   key_to_search=joined_key,
                                                   default=default,
