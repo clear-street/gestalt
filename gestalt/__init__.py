@@ -1,12 +1,14 @@
-from gestalt.vault import Vault
+from gestalt.vault import Vault  # noqa: E999
 from gestalt.provider import Provider
 import os
 import glob
-import collections.abc as collections
+
 from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
 import yaml
 import re
 import json
+
+from .utils import flatten
 
 
 def merge_into(
@@ -48,21 +50,6 @@ class Gestalt:
         self.__secret_map: Dict[str, List[str]] = {}
         self.regex_pattern = re.compile(
             r"^ref\+([^\+]*)://([^(\+)]+)\#([^\+]+)?$")
-
-    def __flatten(
-        self,
-        d: MutableMapping[Text, Any],
-        parent_key: str = '',
-        sep: str = '.'
-    ) -> Dict[Text, Union[List[Any], Text, int, bool, float]]:
-        items: List[Any] = []
-        for k, v in d.items():
-            new_key = parent_key + sep + k if parent_key else k
-            if isinstance(v, collections.MutableMapping):
-                items.extend(self.__flatten(v, new_key, sep=sep).items())
-            else:
-                items.append((new_key, v))
-        return dict(items)
 
     def add_config_path(self, path: str) -> None:
         """Adds a path to read configs from.
@@ -162,13 +149,10 @@ class Gestalt:
                         f'File {f} is marked as ".yaml" but cannot be read as such: {e}'
                     )
 
-        self.__conf_data = self.__flatten(self.__conf_data,
-                                          sep=self.__delim_char)
+        self.__conf_data = flatten(self.__conf_data, sep=self.__delim_char)
 
         self.__parse_dictionary_keys(self.__conf_data)
-        self.__conf_data = self.__interpolate_keys(self.__conf_data)
         self.__parse_dictionary_keys(self.__conf_sets)
-        self.__conf_sets = self.__interpolate_keys(self.__conf_sets)
 
     def __parse_dictionary_keys(
         self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]
@@ -207,24 +191,6 @@ class Gestalt:
             self.providers.update({"vault": provider})
         else:
             raise TypeError("Provider provider is not supported")
-
-    def __interpolate_keys(
-        self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]
-    ) -> Dict[str, Union[List[Any], str, int, bool, float]]:
-        """Interpolates the keys in the configuration data.
-        """
-        for path, v in self.__secret_map.items():
-            m = self.regex_pattern.search(path)
-            if m is not None:
-                provider = self.providers[m.group(1)]
-                for config_key in v:
-                    secret = provider.get(key=config_key,
-                                          path=m.group(2),
-                                          filter=m.group(3))
-                    dictionary.update({config_key: secret})
-
-        dictionary = self.__flatten(dictionary, sep=self.__delim_char)
-        return dictionary
 
     def auto_env(self) -> None:
         """Auto env provides sane defaults for using environment variables
@@ -427,37 +393,18 @@ class Gestalt:
             raise TypeError(
                 f'Provided default is of incorrect type {type(default)}, it should be of type {t}'
             )
-        if key in self.__conf_sets:
-            val = self.__conf_sets[key]
-            if not isinstance(val, t):
-                raise TypeError(
-                    f'Given set key is not of type {t}, but of type {type(val)}'
-                )
-            return val
-        if self.__use_env:
-            e_key = key.upper().replace(self.__delim_char, '_')
-            if e_key in os.environ:
-                try:
-                    return t(os.environ[e_key])
-                except ValueError as e:
-                    raise TypeError(
-                        f'The environment variable {e_key} could not be converted to type {t}: {e}'
-                    )
-        if key in self.__conf_data:
-            if not isinstance(self.__conf_data[key], t):
-                raise TypeError(
-                    f'The requested key of {key} is not of type {t} (it is {type(self.__conf_data[key])})'
-                )
-            return self.__conf_data[key]
-        if default:
-            return default
-        if key in self.__conf_defaults:
-            val = self.__conf_defaults[key]
-            if not isinstance(val, t):
-                raise TypeError(
-                    f'Given default set key is not of type {t}, but of type {type(val)}'
-                )
-            return val
+        split_keys = key.split(self.__delim_char)
+        consider_keys = list()
+        for split_key in split_keys:
+            consider_keys.append(split_key)
+            joined_key = self.__delim_char.join(consider_keys)
+            config_val = self._get_config_for_key(key=key,
+                                                  key_to_search=joined_key,
+                                                  default=default,
+                                                  object_type=t)
+            if config_val is not None:
+                return config_val
+
         raise ValueError(
             f'Given key {key} is not in any configuration and no default is provided'
         )
@@ -597,3 +544,64 @@ class Gestalt:
         ret.update(self.__conf_data)
         ret.update(self.__conf_sets)
         return str(json.dumps(ret, indent=4))
+
+    def _get_config_for_key(
+        self, key: str, key_to_search: str,
+        default: Optional[Union[str, int, float, bool, List[Any]]],
+        object_type: Type[Union[str, int, float, bool, List[Any]]]
+    ) -> Optional[Union[str, int, float, bool, List[Any]]]:
+        if key_to_search in self.__conf_sets:
+            val = self.__conf_sets[key_to_search]
+            if not isinstance(val, object_type):
+                raise TypeError(
+                    f'Given set key is not of type {object_type}, but of type {type(val)}'
+                )
+            return val
+        if self.__use_env:
+            e_key = key_to_search.upper().replace(self.__delim_char, '_')
+            if e_key in os.environ:
+                try:
+                    return object_type(os.environ[e_key])
+                except ValueError as e:
+                    raise TypeError(
+                        f'The environment variable {e_key} could not be converted to type {object_type}: {e}'
+                    )
+
+        if key_to_search in self.__conf_data:
+            val = self.__conf_data[key_to_search]
+            for provider in self.providers.values():
+                if isinstance(val, str) and val.startswith(provider.scheme):
+                    regex_search = self.regex_pattern.search(val)
+                    if regex_search is not None:
+                        path = regex_search.group(2)
+                        filter_ = regex_search.group(3)
+                        remainder_filter = key[len(key_to_search):]
+                        if len(remainder_filter) > 1:
+                            if filter_ is not None:
+                                filter_ = f".{filter_}{remainder_filter}"
+
+                            else:
+                                filter_ = remainder_filter
+
+                        interpolated_val = provider.get(key=val,
+                                                        path=path,
+                                                        filter=filter_,
+                                                        sep=self.__delim_char)
+                        break
+            else:
+                interpolated_val = val
+            if not isinstance(interpolated_val, object_type):
+                raise TypeError(
+                    f'Given set key is not of type {object_type}, but of type {type(interpolated_val)}'
+                )
+            return interpolated_val
+        if default:
+            return default
+        if key_to_search in self.__conf_defaults:
+            val = self.__conf_defaults[key_to_search]
+            if not isinstance(val, object_type):
+                raise TypeError(
+                    f'Given default set key is not of type {object_type}, but of type {type(val)}'
+                )
+            return val
+        return None

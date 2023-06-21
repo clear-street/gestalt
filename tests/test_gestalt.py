@@ -9,43 +9,6 @@ import pytest
 import os
 import gestalt
 import hvac
-import requests
-
-
-class MockSession(requests.Session):
-    def request(self, *_, **__):
-        resp = {
-            'request_id': '230f5e67-e55d-bdae-bd24-c7bc13c1a3e9',
-            'lease_id': '',
-            'renewable': False,
-            'lease_duration': 0,
-            'data': {
-                'last_vault_rotation': '2023-05-31T14:24:41.724285249Z',
-                'password': 'foo',
-                'rotation_period': 60,
-                'ttl': 0,
-                'username': 'foo'
-            },
-            'wrap_info': None,
-            'warnings': None,
-            'auth': None
-        }
-        return MockResponse(resp, 200)
-
-
-class MockResponse:
-    def __init__(self, json_data, status_code):
-        self.json_data = json_data
-        self.status_code = status_code
-        self.ok = True
-
-    def json(self):
-        return self.json_data
-
-
-@pytest.fixture
-def mock_db_role_request(mocker):
-    mocker.patch("requests.Session", MockSession)
 
 
 # Testing member function
@@ -515,28 +478,9 @@ def test_set_default_bad_type_set_config():
         assert 'Set config has' in terr
 
 
-# Vault testing
-@pytest.fixture(scope="function")
-def env_setup():
-    os.environ['VAULT_ADDR'] = "http://localhost:8200"
-    os.environ['VAULT_TOKEN'] = "myroot"
-
-
-def test_vault_setup(env_setup):
+def test_vault_setup():
     vault = Vault(role=None, jwt=None)
     assert vault.vault_client.is_authenticated() is True
-
-
-@pytest.fixture(scope="function")
-def incorrect_env_setup():
-    os.environ['VAULT_ADDR'] = ""
-
-
-@pytest.fixture(scope="function")
-def secret_setup(env_setup):
-    client = hvac.Client()
-    client.secrets.kv.v2.create_or_update_secret(
-        path="test", secret=dict(test_secret="test_secret_password"))
 
 
 def test_vault_interpolation(secret_setup):
@@ -549,21 +493,7 @@ def test_vault_interpolation(secret_setup):
     assert secret == "test_secret_password"
 
 
-@pytest.fixture(scope="function")
-def mount_setup(env_setup):
-    client = hvac.Client()
-    secret_engines_list = client.sys.list_mounted_secrets_engines(
-    )['data'].keys()
-    if "test-mount/" in secret_engines_list:
-        client.sys.disable_secrets_engine(path="test-mount")
-    client.sys.enable_secrets_engine(backend_type="kv", path="test-mount")
-    client.secrets.kv.v2.create_or_update_secret(
-        mount_point="test-mount",
-        path="test",
-        secret=dict(test_mount="test_mount_password"))
-
-
-def test_vault_mount_path(env_setup, mount_setup):
+def test_vault_mount_path(mount_setup):
     g = gestalt.Gestalt()
     g.add_config_file("./tests/testvault/testmount.json")
     g.configure_provider("vault", Vault(role=None, jwt=None))
@@ -572,36 +502,16 @@ def test_vault_mount_path(env_setup, mount_setup):
     assert secret == "test_mount_password"
 
 
-def test_vault_incorrect_path(env_setup, mount_setup):
+def test_vault_incorrect_path(mount_setup):
     g = gestalt.Gestalt()
     g.add_config_file("./tests/testvault/testincorrectmount.json")
     g.configure_provider("vault", Vault(role=None, jwt=None))
     with pytest.raises(RuntimeError):
         g.build_config()
+        g.get_string("test_mount")
 
 
-@pytest.fixture(scope="function")
-def mount_setup(env_setup):
-    client = hvac.Client()
-    secret_engines_list = client.sys.list_mounted_secrets_engines(
-    )['data'].keys()
-    if "test-mount/" in secret_engines_list:
-        client.sys.disable_secrets_engine(path="test-mount")
-    client.sys.enable_secrets_engine(backend_type="kv", path="test-mount")
-    client.secrets.kv.v2.create_or_update_secret(
-        mount_point="test-mount",
-        path="test",
-        secret=dict(test_mount="test_mount_password"))
-
-
-@pytest.fixture(scope="function")
-def nested_setup(env_setup):
-    client = hvac.Client()
-    client.secrets.kv.v2.create_or_update_secret(
-        path="testnested", secret=dict(slack={"token": "random-token"}))
-
-
-def test_nest_key_for_vault(env_setup, nested_setup):
+def test_nest_key_for_vault(nested_setup, secret_setup):
     g = gestalt.Gestalt()
     g.add_config_file("./tests/testvault/testnested.json")
     g.configure_provider("vault", Vault(role=None, jwt=None))
@@ -612,37 +522,23 @@ def test_nest_key_for_vault(env_setup, nested_setup):
     assert secret_slack == "random-token"
 
 
-def test_read_no_nest_db_role(env_setup, mock_db_role_request):
+def test_read_no_nest_db_role(mock_db_role_request):
     g = gestalt.Gestalt()
     g.add_config_file("./tests/testvault/testsfdynamic.json")
     g.configure_provider("vault", Vault(role=None, jwt=None))
     g.build_config()
-    secret_username = g.get_string("snowflake.username")
+    secret_username = g.get_string("username")
     assert secret_username == "foo"
 
 
-def test_set_vault_key(env_setup, nested_setup):
+def test_set_vault_key(nested_setup):
     g = gestalt.Gestalt()
     g.configure_provider("vault", Vault(role=None, jwt=None))
     g.set_string(key="test",
                  value="ref+vault://secret/data/testnested#.slack.token")
     g.build_config()
     secret = g.get_string("test")
-    assert secret == "random-token"
-
-
-@pytest.fixture
-def mock_vault_workers():
-    mock_dynamic_renew = Mock()
-    mock_k8s_renew = Mock()
-    patch("gestalt.vault.Thread",
-          side_effect=[mock_dynamic_renew, mock_k8s_renew]).start()
-    return (mock_dynamic_renew, mock_k8s_renew)
-
-
-@pytest.fixture
-def mock_vault_k8s_auth():
-    return patch("gestalt.vault.hvac.api.auth_methods.Kubernetes").start()
+    assert secret == "ref+vault://secret/data/testnested#.slack.token"
 
 
 @pytest.mark.asyncio
@@ -674,7 +570,6 @@ async def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
             mock_client().sys.renew_lease.assert_called()
             mock_k8s_renew.start.assert_called_once()
 
-            mock_vault_k8s_auth.stop()
             mock_dynamic_renew.stop()
             mock_k8s_renew.stop()
 
@@ -720,26 +615,29 @@ async def test_vault_start_dynamic_lease(mock_vault_workers):
             "data": "mock_data"
         }
     }
-    mock_vault_client_read = patch("gestalt.vault.hvac.Client.read",
-                                   return_value=mock_response).start()
 
-    mock_dynamic_token_queue = Mock()
-    mock_kube_token_queue = Mock()
-    mock_queues = patch(
-        "gestalt.vault.asyncio.Queue",
-        side_effect=[mock_dynamic_token_queue, mock_kube_token_queue]).start()
+    mock_vault_client_patch = patch("gestalt.vault.hvac.Client.read",
+                                    return_value=mock_response)
+    with mock_vault_client_patch as mock_vault_client_read:
+        mock_dynamic_token_queue = Mock()
+        mock_kube_token_queue = Mock()
+        with patch(
+                "gestalt.vault.asyncio.Queue",
+                side_effect=[mock_dynamic_token_queue,
+                             mock_kube_token_queue]) as mock_queues:
 
-    v = Vault(role=None, jwt=None)
-    g = gestalt.Gestalt()
-    g.add_config_file("./tests/testvault/testmount.json")
-    g.configure_provider("vault", v)
-    g.build_config()
+            v = Vault(role=None, jwt=None)
+            g = gestalt.Gestalt()
+            g.add_config_file("./tests/testvault/testmount.json")
+            g.configure_provider("vault", v)
+            g.build_config()
+            g.get_string("test_mount")
 
-    mock_vault_client_read.assert_called()
-    mock_dynamic_token_queue.put_nowait.assert_called()
+            mock_vault_client_read.assert_called()
+            mock_dynamic_token_queue.put_nowait.assert_called()
 
-    mock_vault_client_read.stop()
-    mock_dynamic_token_queue.stop()
-    mock_kube_token_queue.stop()
-    mock_queues.stop()
-    mock_vault_client_read.stop()
+            mock_vault_client_read.stop()
+            mock_dynamic_token_queue.stop()
+            mock_kube_token_queue.stop()
+            mock_queues.stop()
+            mock_vault_client_read.stop()

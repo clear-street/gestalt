@@ -1,8 +1,9 @@
+from datetime import datetime, timedelta
 from time import sleep
 from gestalt.provider import Provider
 import requests
 from jsonpath_ng import parse  # type: ignore
-from typing import Optional, Tuple, Any
+from typing import Optional, Tuple, Any, Dict, Union, List
 import hvac  # type: ignore
 import asyncio
 import os
@@ -18,7 +19,8 @@ class Vault(Provider):
                  jwt: Optional[str] = None,
                  url: Optional[str] = os.environ.get("VAULT_ADDR"),
                  token: Optional[str] = os.environ.get("VAULT_TOKEN"),
-                 verify: Optional[bool] = True) -> None:
+                 verify: Optional[bool] = True,
+                 scheme: str = "ref+vault://") -> None:
         """Initialized vault client and authenticates vault
 
         Args:
@@ -28,6 +30,7 @@ class Vault(Provider):
             auth_config (HVAC_ClientAuthentication): authenticates the initialized vault client
                 with role and jwt string from kubernetes
         """
+        self._scheme: str = scheme
         self.dynamic_token_queue: asyncio.Queue[Any] = asyncio.Queue(maxsize=0)
         self.kubes_token_queue: asyncio.Queue[Any] = asyncio.Queue(maxsize=0)
 
@@ -35,6 +38,9 @@ class Vault(Provider):
                                         token=token,
                                         cert=cert,
                                         verify=verify)
+        self._secret_expiry_times: Dict[str, datetime] = dict()
+        self._secret_values: Dict[str, Union[str, int, float, bool,
+                                             List[Any]]] = dict()
 
         try:
             self.vault_client.is_authenticated()
@@ -73,15 +79,31 @@ class Vault(Provider):
             kubernetes_ttl_renew.start()
 
     @retry(RuntimeError, delay=3, tries=3)  # type: ignore
-    def get(self, key: str, path: str, filter: str) -> Any:
+    def get(
+        self,
+        key: str,
+        path: str,
+        filter: str,
+        sep: Optional[str] = "."
+    ) -> Union[str, int, float, bool, List[Any]]:
         """Gets secret from vault
         Args:
             key (str): key to get secret from
             path (str): path to secret
             filter (str): filter to apply to secret
+            sep (str): delimiter used for flattening
         Returns:
             secret (str): secret
         """
+        # if the key has been read before and is not a TTL secret
+        if key in self._secret_values and key not in self._secret_expiry_times:
+            return self._secret_values[key]
+
+        # if the secret can expire but hasn't expired yet
+        if key in self._secret_expiry_times and not self._is_secret_expired(
+                key):
+            return self._secret_values[key]
+
         try:
             response = self.vault_client.read(path)
             if response is None:
@@ -109,7 +131,28 @@ class Vault(Provider):
         returned_value_from_secret = match[0].value
         if returned_value_from_secret == "":
             raise RuntimeError("Gestalt Error: Empty secret!")
-        return returned_value_from_secret
+
+        self._secret_values[key] = returned_value_from_secret
+        if "ttl" in requested_data:
+            self._set_secrets_ttl(requested_data, key)
+
+        return returned_value_from_secret  # type: ignore
+
+    def _is_secret_expired(self, key: str) -> bool:
+        now = datetime.now()
+        secret_expires_dt = self._secret_expiry_times[key]
+        is_expired = now >= secret_expires_dt
+        return is_expired
+
+    def _set_secrets_ttl(self, requested_data: Dict[str, Any],
+                         key: str) -> None:
+        last_vault_rotation_str = requested_data["last_vault_rotation"].split(
+            ".")[0]  # to the nearest second
+        last_vault_rotation_dt = datetime.strptime(last_vault_rotation_str,
+                                                   '%Y-%m-%dT%H:%M:%S')
+        ttl = requested_data["ttl"]
+        secret_expires_dt = last_vault_rotation_dt + timedelta(seconds=ttl)
+        self._secret_expiry_times[key] = secret_expires_dt
 
     async def worker(self, token_queue: Any) -> None:
         """
@@ -138,3 +181,7 @@ class Vault(Provider):
                 "Gestalt Error: Gestalt couldn't connect to Vault")
         except Exception as err:
             raise RuntimeError(f"Gestalt Error: {err}")
+
+    @property
+    def scheme(self) -> str:
+        return self._scheme
