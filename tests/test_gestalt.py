@@ -619,7 +619,7 @@ def test_vault_start_dynamic_lease(mock_vault_workers):
         mock_dynamic_token_queue = Mock()
         mock_kube_token_queue = Mock()
         with patch(
-                "gestalt.vault.queue.Queue",
+                "gestalt.vault.Queue",
                 side_effect=[mock_dynamic_token_queue,
                              mock_kube_token_queue]) as mock_queues:
 
