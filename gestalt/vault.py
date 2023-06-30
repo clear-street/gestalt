@@ -5,7 +5,7 @@ import requests
 from jsonpath_ng import parse  # type: ignore
 from typing import Optional, Tuple, Any, Dict, Union, List
 import hvac  # type: ignore
-import queue
+from queue import Queue
 import os
 from threading import Thread
 from retry import retry
@@ -31,8 +31,8 @@ class Vault(Provider):
                 with role and jwt string from kubernetes
         """
         self._scheme: str = scheme
-        self.dynamic_token_queue: queue.Queue = queue.Queue()
-        self.kubes_token_queue: queue.Queue = queue.Queue()
+        self.dynamic_token_queue: Queue[Any] = Queue()
+        self.kubes_token_queue: Queue[Any] = Queue()
 
         self.vault_client = hvac.Client(url=url,
                                         token=token,
@@ -66,7 +66,6 @@ class Vault(Provider):
             except requests.exceptions.ConnectionError:
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
-            # unused
             dynamic_ttl_renew = Thread(name='dynamic-token-renew',
                                        target=self.worker,
                                        daemon=True,
@@ -153,7 +152,7 @@ class Vault(Provider):
         secret_expires_dt = last_vault_rotation_dt + timedelta(seconds=ttl)
         self._secret_expiry_times[key] = secret_expires_dt
 
-    def worker(self, token_queue: queue.Queue) -> None:
+    def worker(self, token_queue: Queue[Any]) -> None:
         """
         Worker function to renew lease on expiry
         """
