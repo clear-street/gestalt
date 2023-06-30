@@ -10,6 +10,7 @@ import gestalt
 import hvac
 from queue import Queue
 
+
 # Testing member function
 def test_merge_into():
     combine1 = {}
@@ -618,7 +619,7 @@ def test_vault_start_dynamic_lease(mock_vault_workers):
         mock_dynamic_token_queue = Mock()
         mock_kube_token_queue = Mock()
         with patch(
-                "gestalt.vault.Queue",
+                "gestalt.vault.queue.Queue",
                 side_effect=[mock_dynamic_token_queue,
                              mock_kube_token_queue]) as mock_queues:
 
