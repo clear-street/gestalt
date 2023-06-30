@@ -66,6 +66,7 @@ class Vault(Provider):
             except requests.exceptions.ConnectionError:
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
+            # unused
             dynamic_ttl_renew = Thread(name='dynamic-token-renew',
                                        target=self.worker,
                                        daemon=True,
