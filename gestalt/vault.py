@@ -66,14 +66,15 @@ class Vault(Provider):
             except requests.exceptions.ConnectionError:
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
-            dynamic_ttl_renew = Thread(name='dynamic-token-renew',
-                                       target=self.worker,
-                                       daemon=True,
-                                       args=(self.dynamic_token_queue,))  # noqa: F841
+            dynamic_ttl_renew = Thread(
+                name='dynamic-token-renew',
+                target=self.worker,
+                daemon=True,
+                args=(self.dynamic_token_queue, ))  # noqa: F841
             kubernetes_ttl_renew = Thread(name="kubes-token-renew",
                                           target=self.worker,
                                           daemon=True,
-                                          args=(self.kubes_token_queue,))
+                                          args=(self.kubes_token_queue, ))
             kubernetes_ttl_renew.start()
 
     @retry(RuntimeError, delay=3, tries=3)  # type: ignore
