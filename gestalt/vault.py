@@ -5,7 +5,7 @@ import requests
 from jsonpath_ng import parse  # type: ignore
 from typing import Optional, Tuple, Any, Dict, Union, List
 import hvac  # type: ignore
-import asyncio
+from queue import Queue
 import os
 from threading import Thread
 from retry import retry
@@ -31,8 +31,8 @@ class Vault(Provider):
                 with role and jwt string from kubernetes
         """
         self._scheme: str = scheme
-        self.dynamic_token_queue: asyncio.Queue[Any] = asyncio.Queue(maxsize=0)
-        self.kubes_token_queue: asyncio.Queue[Any] = asyncio.Queue(maxsize=0)
+        self.dynamic_token_queue: Queue[Tuple[str, str, str]] = Queue()
+        self.kubes_token_queue: Queue[Tuple[str, str, str]] = Queue()
 
         self.vault_client = hvac.Client(url=url,
                                         token=token,
@@ -66,16 +66,15 @@ class Vault(Provider):
             except requests.exceptions.ConnectionError:
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
-            dynamic_ttl_renew = Thread(name='dynamic-token-renew',
-                                       target=asyncio.run,
-                                       daemon=True,
-                                       args=(self.worker(
-                                           self.dynamic_token_queue), ))
+            dynamic_ttl_renew = Thread(
+                name='dynamic-token-renew',
+                target=self.worker,
+                daemon=True,
+                args=(self.dynamic_token_queue, ))  # noqa: F841
             kubernetes_ttl_renew = Thread(name="kubes-token-renew",
-                                          target=asyncio.run,
+                                          target=self.worker,
                                           daemon=True,
-                                          args=(self.worker(
-                                              self.kubes_token_queue), ))
+                                          args=(self.kubes_token_queue, ))
             kubernetes_ttl_renew.start()
 
     @retry(RuntimeError, delay=3, tries=3)  # type: ignore
@@ -154,7 +153,7 @@ class Vault(Provider):
         secret_expires_dt = last_vault_rotation_dt + timedelta(seconds=ttl)
         self._secret_expiry_times[key] = secret_expires_dt
 
-    async def worker(self, token_queue: Any) -> None:
+    def worker(self, token_queue: Queue) -> None:  # type: ignore
         """
         Worker function to renew lease on expiry
         """
@@ -162,7 +161,7 @@ class Vault(Provider):
         try:
             while True:
                 if not token_queue.empty():
-                    token_type, token_id, token_duration = token = await token_queue.get(
+                    token_type, token_id, token_duration = token = token_queue.get(
                     )
                     if token_type == "kubernetes":
                         self.vault_client.auth.token.renew(token_id)

@@ -16,7 +16,7 @@ jobs:
       # Label used to access the service container
       vault:
         # Docker Hub image
-        image: vault
+        image: hashicorp/vault:1.13.3
         options: --name vault-test
         ports:
           # Opens tcp port 8200 on the host and service container

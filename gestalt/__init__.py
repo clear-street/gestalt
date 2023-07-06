@@ -3,7 +3,7 @@ from gestalt.provider import Provider
 import os
 import glob
 
-from typing import Dict, List, Type, Union, Optional, MutableMapping, Text, Any
+from typing import Dict, List, Type, Union, Optional, Text, Any
 import yaml
 import re
 import json

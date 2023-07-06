@@ -11,7 +11,7 @@ with open("requirements.txt") as reqs_file:
     reqs_list = list(map(lambda x: x.rstrip(), reqs))
 
 setup(name='gestalt-cfg',
-      version='3.3.0',
+      version='3.3.1',
       description='A sensible configuration library for Python',
       long_description=readme(),
       long_description_content_type="text/markdown",

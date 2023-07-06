@@ -4,11 +4,11 @@ from unittest.mock import patch, Mock
 
 from gestalt.vault import Vault
 from gestalt import merge_into
-import asyncio
 import pytest
 import os
 import gestalt
 import hvac
+from queue import Queue
 
 
 # Testing member function
@@ -541,8 +541,7 @@ def test_set_vault_key(nested_setup):
     assert secret == "ref+vault://secret/data/testnested#.slack.token"
 
 
-@pytest.mark.asyncio
-async def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
+def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
     mock_dynamic_renew, mock_k8s_renew = mock_vault_workers
 
     mock_sleep = None
@@ -560,11 +559,11 @@ async def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
 
             mock_k8s_renew.start.assert_called()
 
-            test_token_queue = asyncio.Queue(maxsize=0)
-            await test_token_queue.put(("dynamic", 1, 100))
+            test_token_queue = Queue(maxsize=0)
+            test_token_queue.put(("dynamic", 1, 100))
 
             with pytest.raises(RuntimeError):
-                await v.worker(test_token_queue)
+                v.worker(test_token_queue)
 
             mock_sleep.assert_called()
             mock_client().sys.renew_lease.assert_called()
@@ -574,8 +573,7 @@ async def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
             mock_k8s_renew.stop()
 
 
-@pytest.mark.asyncio
-async def test_vault_worker_k8s(mock_vault_workers):
+def test_vault_worker_k8s(mock_vault_workers):
     mock_dynamic_renew, mock_k8s_renew = mock_vault_workers
 
     mock_sleep = None
@@ -592,11 +590,11 @@ async def test_vault_worker_k8s(mock_vault_workers):
 
             mock_k8s_renew.start.assert_called()
 
-            test_token_queue = asyncio.Queue(maxsize=0)
-            await test_token_queue.put(("kubernetes", 1, 100))
+            test_token_queue = Queue(maxsize=0)
+            test_token_queue.put(("kubernetes", 1, 100))
 
             with pytest.raises(RuntimeError):
-                await v.worker(test_token_queue)
+                v.worker(test_token_queue)
 
             mock_sleep.assert_called()
             mock_client().auth.token.renew.assert_called()
@@ -606,8 +604,7 @@ async def test_vault_worker_k8s(mock_vault_workers):
             mock_k8s_renew.stop()
 
 
-@pytest.mark.asyncio
-async def test_vault_start_dynamic_lease(mock_vault_workers):
+def test_vault_start_dynamic_lease(mock_vault_workers):
     mock_response = {
         "lease_id": "1",
         "lease_duration": 5,
@@ -622,7 +619,7 @@ async def test_vault_start_dynamic_lease(mock_vault_workers):
         mock_dynamic_token_queue = Mock()
         mock_kube_token_queue = Mock()
         with patch(
-                "gestalt.vault.asyncio.Queue",
+                "gestalt.vault.Queue",
                 side_effect=[mock_dynamic_token_queue,
                              mock_kube_token_queue]) as mock_queues:
 
