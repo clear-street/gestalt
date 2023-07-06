@@ -1,3 +1,4 @@
+from __future__ import annotations
 from datetime import datetime, timedelta
 from time import sleep
 from gestalt.provider import Provider
