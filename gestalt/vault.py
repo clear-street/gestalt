@@ -1,4 +1,3 @@
-from __future__ import annotations
 from datetime import datetime, timedelta
 from time import sleep
 from gestalt.provider import Provider
@@ -154,7 +153,7 @@ class Vault(Provider):
         secret_expires_dt = last_vault_rotation_dt + timedelta(seconds=ttl)
         self._secret_expiry_times[key] = secret_expires_dt
 
-    def worker(self, token_queue: Queue[Tuple[str, str, str]]) -> None:
+    def worker(self, token_queue: "Queue[Tuple[str, str, str]]") -> None:
         """
         Worker function to renew lease on expiry
         """
