@@ -549,7 +549,7 @@ class Gestalt:
         self, key: str, key_to_search: str,
         default: Optional[Union[str, int, float, bool, List[Any]]],
         object_type: Type[Union[str, int, float, bool, List[Any]]]
-    ) -> Optional[Union[str, int, float, bool, List[Any]]]:  # noqa
+    ) -> Optional[Union[str, int, float, bool, List[Any]]]:
         if key_to_search in self.__conf_sets:
             val = self.__conf_sets[key_to_search]
             if not isinstance(val, object_type):

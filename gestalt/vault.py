@@ -31,8 +31,8 @@ class Vault(Provider):
                 with role and jwt string from kubernetes
         """
         self._scheme: str = scheme
-        self.dynamic_token_queue: Queue = Queue()  # type: ignore
-        self.kubes_token_queue: Queue = Queue()  # type: ignore
+        self.dynamic_token_queue: Queue = Queue()
+        self.kubes_token_queue: Queue = Queue()
 
         self.vault_client = hvac.Client(url=url,
                                         token=token,
