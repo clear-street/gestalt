@@ -31,6 +31,7 @@ class Vault(Provider):
                 with role and jwt string from kubernetes
         """
         self._scheme: str = scheme
+        self._run_worker = True
         self.dynamic_token_queue: Queue[Tuple[str, str, str]] = Queue()
         self.kubes_token_queue: Queue[Tuple[str, str, str]] = Queue()
 
@@ -76,6 +77,12 @@ class Vault(Provider):
                                           daemon=True,
                                           args=(self.kubes_token_queue, ))
             kubernetes_ttl_renew.start()
+
+    def stop(self) -> None:
+        self._run_worker = False
+
+    def __del__(self) -> None:
+        self.stop()
 
     @retry(RuntimeError, delay=3, tries=3)  # type: ignore
     def get(
@@ -159,7 +166,7 @@ class Vault(Provider):
         """
 
         try:
-            while True:
+            while self._run_worker:
                 if not token_queue.empty():
                     token_type, token_id, token_duration = token = token_queue.get(
                     )
