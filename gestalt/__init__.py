@@ -395,6 +395,7 @@ class Gestalt:
             )
         split_keys = key.split(self.__delim_char)
         consider_keys = list()
+        config_val = None
         for split_key in split_keys:
             consider_keys.append(split_key)
             joined_key = self.__delim_char.join(consider_keys)
@@ -402,8 +403,10 @@ class Gestalt:
                                                   key_to_search=joined_key,
                                                   default=default,
                                                   object_type=t)
-            if config_val is not None:
+            if config_val is not None and config_val != default:
                 return config_val
+        if default is not None:
+            return default
 
         raise ValueError(
             f'Given key {key} is not in any configuration and no default is provided'

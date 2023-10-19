@@ -219,7 +219,7 @@ Note that all of these functions, in addition from being type hinted, also stron
 To set a default configuration value programmatically:
 
 ```python
-g.set_defualt_string('some.default.k', 'default value')
+g.set_default_string('some.default.k', 'default value')
 ```
 
 Defined by the function signature
