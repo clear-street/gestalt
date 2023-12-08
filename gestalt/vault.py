@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from time import sleep
 from gestalt.provider import Provider
 import requests
+from requests.exceptions import Timeout
 from jsonpath_ng import parse  # type: ignore
 from typing import Optional, Tuple, Any, Dict, Union, List
 import hvac  # type: ignore
@@ -12,7 +13,7 @@ from retry import retry
 
 
 class Vault(Provider):
-    @retry(exceptions=(RuntimeError, requests.exceptions.Timeout), delay=2, tries=5)  # type: ignore
+    @retry(exceptions=(RuntimeError, Timeout), delay=2, tries=5)  # type: ignore
     def __init__(self,
                  cert: Optional[Tuple[str, str]] = None,
                  role: Optional[str] = None,
@@ -84,7 +85,7 @@ class Vault(Provider):
     def __del__(self) -> None:
         self.stop()
 
-    @retry((RuntimeError, requests.exceptions.Timeout), delay=3, tries=3)  # type: ignore
+    @retry((RuntimeError, Timeout), delay=3, tries=3)  # type: ignore
     def get(
         self,
         key: str,
