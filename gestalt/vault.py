@@ -12,7 +12,7 @@ from retry import retry
 
 
 class Vault(Provider):
-    @retry(exceptions=RuntimeError, delay=2, tries=5)  # type: ignore
+    @retry(exceptions=(RuntimeError, requests.exceptions.Timeout), delay=2, tries=5)  # type: ignore
     def __init__(self,
                  cert: Optional[Tuple[str, str]] = None,
                  role: Optional[str] = None,
@@ -84,7 +84,7 @@ class Vault(Provider):
     def __del__(self) -> None:
         self.stop()
 
-    @retry(RuntimeError, delay=3, tries=3)  # type: ignore
+    @retry((RuntimeError, requests.exceptions.Timeout), delay=3, tries=3)  # type: ignore
     def get(
         self,
         key: str,
