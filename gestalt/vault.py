@@ -13,7 +13,7 @@ from retry import retry
 
 
 class Vault(Provider):
-    @retry(exceptions=(RuntimeError, Timeout), delay=2, tries=5)  # type: ignore
+    @retry((RuntimeError, Timeout), delay=2, tries=5)  # type: ignore
     def __init__(self,
                  cert: Optional[Tuple[str, str]] = None,
                  role: Optional[str] = None,
