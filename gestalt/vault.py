@@ -9,11 +9,11 @@ import hvac  # type: ignore
 from queue import Queue
 import os
 from threading import Thread
-from retry import retry
+from retry.api import retry_call
 
 
 class Vault(Provider):
-    @retry((RuntimeError, Timeout), delay=2, tries=5)  # type: ignore
+
     def __init__(self,
                  cert: Optional[Tuple[str, str]] = None,
                  role: Optional[str] = None,
@@ -21,9 +21,26 @@ class Vault(Provider):
                  url: Optional[str] = os.environ.get("VAULT_ADDR"),
                  token: Optional[str] = os.environ.get("VAULT_TOKEN"),
                  verify: Optional[bool] = True,
-                 scheme: str = "ref+vault://") -> None:
-        """Initialized vault client and authenticates vault
+                 scheme: str = "ref+vault://",
+                 delay=2,
+                 tries=5) -> None:
 
+        self.delay = delay
+        self.tries = tries
+
+        retry_call(f=Vault.__do_init, fargs=[self, cert, role, jwt, url, token, verify],
+                   exceptions=(RuntimeError, Timeout), delay=self.delay,
+                   tries=self.tries)
+
+    def __do_init(self,
+                  cert: Optional[Tuple[str, str]],
+                  role: Optional[str],
+                  jwt: Optional[str],
+                  url: Optional[str],
+                  token: Optional[str],
+                  verify: Optional[bool],
+                  scheme: str) -> None:
+        """Initialized vault client and authenticates vault
         Args:
             client_config (HVAC_ClientConfig): initializes vault. URL can be set in VAULT_ADDR
                 environment variable, token can be set to VAULT_TOKEN environment variable.
@@ -42,7 +59,7 @@ class Vault(Provider):
                                         verify=verify)
         self._secret_expiry_times: Dict[str, datetime] = dict()
         self._secret_values: Dict[str, Union[str, int, float, bool,
-                                             List[Any]]] = dict()
+        List[Any]]] = dict()
 
         try:
             self.vault_client.is_authenticated()
@@ -72,11 +89,11 @@ class Vault(Provider):
                 name='dynamic-token-renew',
                 target=self.worker,
                 daemon=True,
-                args=(self.dynamic_token_queue, ))  # noqa: F841
+                args=(self.dynamic_token_queue,))  # noqa: F841
             kubernetes_ttl_renew = Thread(name="kubes-token-renew",
                                           target=self.worker,
                                           daemon=True,
-                                          args=(self.kubes_token_queue, ))
+                                          args=(self.kubes_token_queue,))
             kubernetes_ttl_renew.start()
 
     def stop(self) -> None:
@@ -85,13 +102,23 @@ class Vault(Provider):
     def __del__(self) -> None:
         self.stop()
 
-    @retry((RuntimeError, Timeout), delay=3, tries=3)  # type: ignore
-    def get(
-        self,
-        key: str,
-        path: str,
-        filter: str,
-        sep: Optional[str] = "."
+        def get(
+                self,
+                key: str,
+                path: str,
+                filter: str,
+                sep: Optional[str] = "."
+        ) -> Union[str, int, float, bool, List[Any]]:
+
+        return retry_call(f=Vault.__do_get, fargs=[self, key, path, filter, sep], exceptions=(RuntimeError, Timeout),
+                          delay=self.delay, tries=self.tries)
+
+    def __do_get(
+            self,
+            key: str,
+            path: str,
+            filter: str,
+            sep: Optional[str] = "."
     ) -> Union[str, int, float, bool, List[Any]]:
         """Gets secret from vault
         Args:
