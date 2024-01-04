@@ -130,6 +130,7 @@ class Vault(Provider):
             tries=self.tries,
         )
 
+    # get impl for retry_call
     def __do_get(
         self,
         key: str,
