@@ -1,15 +1,17 @@
-from datetime import datetime, timedelta
-from time import sleep
-from gestalt.provider import Provider
-import requests
-from requests.exceptions import Timeout
-from jsonpath_ng import parse  # type: ignore
-from typing import Optional, Tuple, Any, Dict, Union, List
-import hvac  # type: ignore
-from queue import Queue
 import os
+from datetime import datetime, timedelta
+from queue import Queue
 from threading import Thread
+from time import sleep
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import hvac  # type: ignore
+import requests
+from jsonpath_ng import parse  # type: ignore
+from requests.exceptions import Timeout
 from retry.api import retry_call
+
+from gestalt.provider import Provider
 
 
 class Vault(Provider):
@@ -28,7 +30,7 @@ class Vault(Provider):
         self.delay = delay
         self.tries = tries
 
-        retry_call(f=Vault.__do_init, fargs=[self, cert, role, jwt, url, token, verify],
+        retry_call(f=Vault.__do_init, fargs=[self, cert, role, jwt, url, token, verify, scheme],
                    exceptions=(RuntimeError, Timeout), delay=self.delay,
                    tries=self.tries)
 
@@ -102,13 +104,13 @@ class Vault(Provider):
     def __del__(self) -> None:
         self.stop()
 
-        def get(
-                self,
-                key: str,
-                path: str,
-                filter: str,
-                sep: Optional[str] = "."
-        ) -> Union[str, int, float, bool, List[Any]]:
+    def get(
+            self,
+            key: str,
+            path: str,
+            filter: str,
+            sep: Optional[str] = "."
+    ) -> Union[str, int, float, bool, List[Any]]:
 
         return retry_call(f=Vault.__do_get, fargs=[self, key, path, filter, sep], exceptions=(RuntimeError, Timeout),
                           delay=self.delay, tries=self.tries)
