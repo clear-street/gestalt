@@ -39,6 +39,7 @@ class Vault(Provider):
             tries=self.tries,
         )
 
+    # __init__ impl for retry_call
     def __do_init(
         self,
         cert: Optional[Tuple[str, str]],
