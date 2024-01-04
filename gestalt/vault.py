@@ -15,7 +15,6 @@ from gestalt.provider import Provider
 
 
 class Vault(Provider):
-
     def __init__(
         self,
         cert: Optional[Tuple[str, str]] = None,
@@ -41,14 +40,14 @@ class Vault(Provider):
 
     # __init__ impl for retry_call
     def __do_init(
-        self,
-        cert: Optional[Tuple[str, str]],
-        role: Optional[str],
-        jwt: Optional[str],
-        url: Optional[str],
-        token: Optional[str],
-        verify: Optional[bool],
-        scheme: str,
+            self,
+            cert: Optional[Tuple[str, str]],
+            role: Optional[str],
+            jwt: Optional[str],
+            url: Optional[str],
+            token: Optional[str],
+            verify: Optional[bool],
+            scheme: str,
     ) -> None:
         """Initialized vault client and authenticates vault
         Args:
@@ -116,12 +115,13 @@ class Vault(Provider):
     def __del__(self) -> None:
         self.stop()
 
-    def get(self,
-            key: str,
-            path: str,
-            filter: str,
-            sep: Optional[str] = "."
-            ) -> Union[str, int, float, bool, List[Any]]:
+    def get(
+        self,
+        key: str,
+        path: str,
+        filter: str,
+        sep: Optional[str] = "."
+    ) -> Union[str, int, float, bool, List[Any]]:
         return retry_call(
             f=Vault.__do_get,
             fargs=[self, key, path, filter, sep],
@@ -130,12 +130,13 @@ class Vault(Provider):
             tries=self.tries,
         )
 
-    def __do_get(self,
-                 key: str,
-                 path: str,
-                 filter: str,
-                 sep: Optional[str] = "."
-                 ) -> Union[str, int, float, bool, List[Any]]:
+    def __do_get(
+        self,
+        key: str,
+        path: str,
+        filter: str,
+        sep: Optional[str] = "."
+    ) -> Union[str, int, float, bool, List[Any]]:
         """Gets secret from vault
         Args:
             key (str): key to get secret from
