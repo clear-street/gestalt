@@ -24,8 +24,8 @@ class Vault(Provider):
                  token: Optional[str] = os.environ.get("VAULT_TOKEN"),
                  verify: Optional[bool] = True,
                  scheme: str = "ref+vault://",
-                 delay=2,
-                 tries=5) -> None:
+                 delay: int = 2,
+                 tries: int = 5) -> None:
 
         self.delay = delay
         self.tries = tries
