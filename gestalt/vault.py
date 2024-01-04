@@ -82,8 +82,8 @@ class Vault(Provider):
                     kubes_token = (
                         "kubernetes",
                         token["data"]["id"],  # type: ignore
-                        token["data"]["ttl"],
-                    )  # type: ignore
+                        token["data"]["ttl"],  # type: ignore
+                    )
                     self.kubes_token_queue.put(kubes_token)
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
