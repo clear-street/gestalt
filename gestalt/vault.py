@@ -15,33 +15,39 @@ from gestalt.provider import Provider
 
 
 class Vault(Provider):
-
-    def __init__(self,
-                 cert: Optional[Tuple[str, str]] = None,
-                 role: Optional[str] = None,
-                 jwt: Optional[str] = None,
-                 url: Optional[str] = os.environ.get("VAULT_ADDR"),
-                 token: Optional[str] = os.environ.get("VAULT_TOKEN"),
-                 verify: Optional[bool] = True,
-                 scheme: str = "ref+vault://",
-                 delay: int = 2,
-                 tries: int = 5) -> None:
-
+    def __init__(
+        self,
+        cert: Optional[Tuple[str, str]] = None,
+        role: Optional[str] = None,
+        jwt: Optional[str] = None,
+        url: Optional[str] = os.environ.get("VAULT_ADDR"),
+        token: Optional[str] = os.environ.get("VAULT_TOKEN"),
+        verify: Optional[bool] = True,
+        scheme: str = "ref+vault://",
+        delay: int = 2,
+        tries: int = 5,
+    ) -> None:
         self.delay = delay
         self.tries = tries
 
-        retry_call(f=Vault.__do_init, fargs=[self, cert, role, jwt, url, token, verify, scheme],
-                   exceptions=(RuntimeError, Timeout), delay=self.delay,
-                   tries=self.tries)
+        retry_call(
+            f=Vault.__do_init,
+            fargs=[self, cert, role, jwt, url, token, verify, scheme],
+            exceptions=(RuntimeError, Timeout),
+            delay=self.delay,
+            tries=self.tries,
+        )
 
-    def __do_init(self,
-                  cert: Optional[Tuple[str, str]],
-                  role: Optional[str],
-                  jwt: Optional[str],
-                  url: Optional[str],
-                  token: Optional[str],
-                  verify: Optional[bool],
-                  scheme: str) -> None:
+    def __do_init(
+        self,
+        cert: Optional[Tuple[str, str]],
+        role: Optional[str],
+        jwt: Optional[str],
+        url: Optional[str],
+        token: Optional[str],
+        verify: Optional[bool],
+        scheme: str,
+    ) -> None:
         """Initialized vault client and authenticates vault
         Args:
             client_config (HVAC_ClientConfig): initializes vault. URL can be set in VAULT_ADDR
@@ -55,13 +61,9 @@ class Vault(Provider):
         self.dynamic_token_queue: Queue[Tuple[str, str, str]] = Queue()
         self.kubes_token_queue: Queue[Tuple[str, str, str]] = Queue()
 
-        self.vault_client = hvac.Client(url=url,
-                                        token=token,
-                                        cert=cert,
-                                        verify=verify)
+        self.vault_client = hvac.Client(url=url, token=token, cert=cert, verify=verify)
         self._secret_expiry_times: Dict[str, datetime] = dict()
-        self._secret_values: Dict[str, Union[str, int, float, bool,
-        List[Any]]] = dict()
+        self._secret_values: Dict[str, Union[str, int, float, bool, List[Any]]] = dict()
 
         try:
             self.vault_client.is_authenticated()
@@ -72,30 +74,36 @@ class Vault(Provider):
 
         if role and jwt:
             try:
-                hvac.api.auth_methods.Kubernetes(
-                    self.vault_client.adapter).login(role=role, jwt=jwt)
+                hvac.api.auth_methods.Kubernetes(self.vault_client.adapter).login(
+                    role=role, jwt=jwt
+                )
                 token = self.vault_client.auth.token.lookup_self()
                 if token is not None:
                     kubes_token = (
                         "kubernetes",
-                        token['data']['id'],  # type: ignore
-                        token['data']['ttl'])  # type: ignore
+                        token["data"]["id"],  # type: ignore
+                        token["data"]["ttl"],
+                    )  # type: ignore
                     self.kubes_token_queue.put(kubes_token)
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
-                    "Gestalt Error: Kubernetes auth couldn't be performed")
+                    "Gestalt Error: Kubernetes auth couldn't be performed"
+                )
             except requests.exceptions.ConnectionError:
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
             dynamic_ttl_renew = Thread(
-                name='dynamic-token-renew',
+                name="dynamic-token-renew",
                 target=self.worker,
                 daemon=True,
-                args=(self.dynamic_token_queue,))  # noqa: F841
-            kubernetes_ttl_renew = Thread(name="kubes-token-renew",
-                                          target=self.worker,
-                                          daemon=True,
-                                          args=(self.kubes_token_queue,))
+                args=(self.dynamic_token_queue,),
+            )  # noqa: F841
+            kubernetes_ttl_renew = Thread(
+                name="kubes-token-renew",
+                target=self.worker,
+                daemon=True,
+                args=(self.kubes_token_queue,),
+            )
             kubernetes_ttl_renew.start()
 
     def stop(self) -> None:
@@ -105,22 +113,18 @@ class Vault(Provider):
         self.stop()
 
     def get(
-            self,
-            key: str,
-            path: str,
-            filter: str,
-            sep: Optional[str] = "."
+        self, key: str, path: str, filter: str, sep: Optional[str] = "."
     ) -> Union[str, int, float, bool, List[Any]]:
-
-        return retry_call(f=Vault.__do_get, fargs=[self, key, path, filter, sep], exceptions=(RuntimeError, Timeout),
-                          delay=self.delay, tries=self.tries)
+        return retry_call(
+            f=Vault.__do_get,
+            fargs=[self, key, path, filter, sep],
+            exceptions=(RuntimeError, Timeout),
+            delay=self.delay,
+            tries=self.tries,
+        )
 
     def __do_get(
-            self,
-            key: str,
-            path: str,
-            filter: str,
-            sep: Optional[str] = "."
+        self, key: str, path: str, filter: str, sep: Optional[str] = "."
     ) -> Union[str, int, float, bool, List[Any]]:
         """Gets secret from vault
         Args:
@@ -136,25 +140,27 @@ class Vault(Provider):
             return self._secret_values[key]
 
         # if the secret can expire but hasn't expired yet
-        if key in self._secret_expiry_times and not self._is_secret_expired(
-                key):
+        if key in self._secret_expiry_times and not self._is_secret_expired(key):
             return self._secret_values[key]
 
         try:
             response = self.vault_client.read(path)
             if response is None:
                 raise RuntimeError("Gestalt Error: No secrets found")
-            if response['lease_id']:
-                dynamic_token = ("dynamic", response['lease_id'],
-                                 response['lease_duration'])
+            if response["lease_id"]:
+                dynamic_token = (
+                    "dynamic",
+                    response["lease_id"],
+                    response["lease_duration"],
+                )
                 self.dynamic_token_queue.put_nowait(dynamic_token)
             requested_data = response["data"].get("data", response["data"])
         except hvac.exceptions.InvalidPath:
             raise RuntimeError(
-                "Gestalt Error: The secret path or mount is set incorrectly")
+                "Gestalt Error: The secret path or mount is set incorrectly"
+            )
         except requests.exceptions.ConnectionError:
-            raise RuntimeError(
-                "Gestalt Error: Gestalt couldn't connect to Vault")
+            raise RuntimeError("Gestalt Error: Gestalt couldn't connect to Vault")
         except Exception as err:
             raise RuntimeError(f"Gestalt Error: {err}")
         if filter is None:
@@ -180,12 +186,13 @@ class Vault(Provider):
         is_expired = now >= secret_expires_dt
         return is_expired
 
-    def _set_secrets_ttl(self, requested_data: Dict[str, Any],
-                         key: str) -> None:
-        last_vault_rotation_str = requested_data["last_vault_rotation"].split(
-            ".")[0]  # to the nearest second
-        last_vault_rotation_dt = datetime.strptime(last_vault_rotation_str,
-                                                   '%Y-%m-%dT%H:%M:%S')
+    def _set_secrets_ttl(self, requested_data: Dict[str, Any], key: str) -> None:
+        last_vault_rotation_str = requested_data["last_vault_rotation"].split(".")[
+            0
+        ]  # to the nearest second
+        last_vault_rotation_dt = datetime.strptime(
+            last_vault_rotation_str, "%Y-%m-%dT%H:%M:%S"
+        )
         ttl = requested_data["ttl"]
         secret_expires_dt = last_vault_rotation_dt + timedelta(seconds=ttl)
         self._secret_expiry_times[key] = secret_expires_dt
@@ -198,8 +205,7 @@ class Vault(Provider):
         try:
             while self._run_worker:
                 if not token_queue.empty():
-                    token_type, token_id, token_duration = token = token_queue.get(
-                    )
+                    token_type, token_id, token_duration = token = token_queue.get()
                     if token_type == "kubernetes":
                         self.vault_client.auth.token.renew(token_id)
                         print("kubernetes token for the app has been renewed")
@@ -211,10 +217,10 @@ class Vault(Provider):
                     sleep((token_duration / 3) * 2)
         except hvac.exceptions.InvalidPath:
             raise RuntimeError(
-                "Gestalt Error: The lease path or mount is set incorrectly")
+                "Gestalt Error: The lease path or mount is set incorrectly"
+            )
         except requests.exceptions.ConnectionError:
-            raise RuntimeError(
-                "Gestalt Error: Gestalt couldn't connect to Vault")
+            raise RuntimeError("Gestalt Error: Gestalt couldn't connect to Vault")
         except Exception as err:
             raise RuntimeError(f"Gestalt Error: {err}")
 
