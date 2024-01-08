@@ -24,30 +24,8 @@ class Vault(Provider):
         token: Optional[str] = os.environ.get("VAULT_TOKEN"),
         verify: Optional[bool] = True,
         scheme: str = "ref+vault://",
-        delay: int = 2,
+        delay: int = 60,
         tries: int = 5,
-    ) -> None:
-        self.delay = delay
-        self.tries = tries
-
-        retry_call(
-            f=Vault.__do_init,
-            fargs=[self, cert, role, jwt, url, token, verify, scheme],
-            exceptions=(RuntimeError, Timeout),
-            delay=self.delay,
-            tries=self.tries,
-        )
-
-    # __init__ impl for retry_call
-    def __do_init(
-            self,
-            cert: Optional[Tuple[str, str]],
-            role: Optional[str],
-            jwt: Optional[str],
-            url: Optional[str],
-            token: Optional[str],
-            verify: Optional[bool],
-            scheme: str,
     ) -> None:
         """Initialized vault client and authenticates vault
         Args:
@@ -70,8 +48,16 @@ class Vault(Provider):
         self._secret_values: Dict[str, Union[str, int, float, bool,
                                              List[Any]]] = dict()
 
+        self.delay = delay
+        self.tries = tries
+
         try:
-            self.vault_client.is_authenticated()
+            retry_call(
+                self.vault_client.is_authenticated,
+                exceptions=(RuntimeError, Timeout),
+                delay=self.delay,
+                tries=self.tries,
+            )
         except requests.exceptions.MissingSchema:
             raise RuntimeError(
                 "Gestalt Error: Unable to connect to vault with the given configuration"
@@ -81,7 +67,13 @@ class Vault(Provider):
             try:
                 hvac.api.auth_methods.Kubernetes(
                     self.vault_client.adapter).login(role=role, jwt=jwt)
-                token = self.vault_client.auth.token.lookup_self()
+                token = retry_call(
+                    self.vault_client.auth.token.lookup_self,
+                    exceptions=(RuntimeError, Timeout),
+                    delay=self.delay,
+                    tries=self.tries,
+                )
+
                 if token is not None:
                     kubes_token = (
                         "kubernetes",
@@ -122,22 +114,6 @@ class Vault(Provider):
         filter: str,
         sep: Optional[str] = "."
     ) -> Union[str, int, float, bool, List[Any]]:
-        return retry_call(
-            f=Vault.__do_get,
-            fargs=[self, key, path, filter, sep],
-            exceptions=(RuntimeError, Timeout),
-            delay=self.delay,
-            tries=self.tries,
-        )
-
-    # get impl for retry_call
-    def __do_get(
-        self,
-        key: str,
-        path: str,
-        filter: str,
-        sep: Optional[str] = "."
-    ) -> Union[str, int, float, bool, List[Any]]:
         """Gets secret from vault
         Args:
             key (str): key to get secret from
@@ -157,7 +133,13 @@ class Vault(Provider):
             return self._secret_values[key]
 
         try:
-            response = self.vault_client.read(path)
+            response = retry_call(
+                self.vault_client.read,
+                fargs=[path],
+                exceptions=(RuntimeError, Timeout),
+                delay=self.delay,
+                tries=self.tries,
+            )
             if response is None:
                 raise RuntimeError("Gestalt Error: No secrets found")
             if response["lease_id"]:
