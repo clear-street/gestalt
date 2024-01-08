@@ -28,6 +28,7 @@ class Vault(Provider):
         tries: int = 5,
     ) -> None:
         """Initialized vault client and authenticates vault
+
         Args:
             client_config (HVAC_ClientConfig): initializes vault. URL can be set in VAULT_ADDR
                 environment variable, token can be set to VAULT_TOKEN environment variable.
@@ -77,9 +78,8 @@ class Vault(Provider):
                 if token is not None:
                     kubes_token = (
                         "kubernetes",
-                        token["data"]["id"],  # type: ignore
-                        token["data"]["ttl"],  # type: ignore
-                    )
+                        token['data']['id'],  # type: ignore
+                        token['data']['ttl'])  # type: ignore
                     self.kubes_token_queue.put(kubes_token)
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
@@ -88,17 +88,14 @@ class Vault(Provider):
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
             dynamic_ttl_renew = Thread(
-                name="dynamic-token-renew",
+                name='dynamic-token-renew',
                 target=self.worker,
                 daemon=True,
-                args=(self.dynamic_token_queue, ),
-            )  # noqa: F841
-            kubernetes_ttl_renew = Thread(
-                name="kubes-token-renew",
-                target=self.worker,
-                daemon=True,
-                args=(self.kubes_token_queue, ),
-            )
+                args=(self.dynamic_token_queue, ))  # noqa: F841
+            kubernetes_ttl_renew = Thread(name="kubes-token-renew",
+                                          target=self.worker,
+                                          daemon=True,
+                                          args=(self.kubes_token_queue, ))
             kubernetes_ttl_renew.start()
 
     def stop(self) -> None:
@@ -142,12 +139,9 @@ class Vault(Provider):
             )
             if response is None:
                 raise RuntimeError("Gestalt Error: No secrets found")
-            if response["lease_id"]:
-                dynamic_token = (
-                    "dynamic",
-                    response["lease_id"],
-                    response["lease_duration"],
-                )
+            if response['lease_id']:
+                dynamic_token = ("dynamic", response['lease_id'],
+                                 response['lease_duration'])
                 self.dynamic_token_queue.put_nowait(dynamic_token)
             requested_data = response["data"].get("data", response["data"])
         except hvac.exceptions.InvalidPath:
@@ -186,7 +180,7 @@ class Vault(Provider):
         last_vault_rotation_str = requested_data["last_vault_rotation"].split(
             ".")[0]  # to the nearest second
         last_vault_rotation_dt = datetime.strptime(last_vault_rotation_str,
-                                                   "%Y-%m-%dT%H:%M:%S")
+                                                   '%Y-%m-%dT%H:%M:%S')
         ttl = requested_data["ttl"]
         secret_expires_dt = last_vault_rotation_dt + timedelta(seconds=ttl)
         self._secret_expiry_times[key] = secret_expires_dt
