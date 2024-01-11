@@ -1,27 +1,32 @@
-from datetime import datetime, timedelta
-from time import sleep
-from gestalt.provider import Provider
-import requests
-from requests.exceptions import Timeout
-from jsonpath_ng import parse  # type: ignore
-from typing import Optional, Tuple, Any, Dict, Union, List
-import hvac  # type: ignore
-from queue import Queue
 import os
+from datetime import datetime, timedelta
+from queue import Queue
 from threading import Thread
-from retry import retry
+from time import sleep
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import hvac  # type: ignore
+import requests
+from jsonpath_ng import parse  # type: ignore
+from requests.exceptions import Timeout
+from retry.api import retry_call
+
+from gestalt.provider import Provider
 
 
 class Vault(Provider):
-    @retry((RuntimeError, Timeout), delay=2, tries=5)  # type: ignore
-    def __init__(self,
-                 cert: Optional[Tuple[str, str]] = None,
-                 role: Optional[str] = None,
-                 jwt: Optional[str] = None,
-                 url: Optional[str] = os.environ.get("VAULT_ADDR"),
-                 token: Optional[str] = os.environ.get("VAULT_TOKEN"),
-                 verify: Optional[bool] = True,
-                 scheme: str = "ref+vault://") -> None:
+    def __init__(
+        self,
+        cert: Optional[Tuple[str, str]] = None,
+        role: Optional[str] = None,
+        jwt: Optional[str] = None,
+        url: Optional[str] = os.environ.get("VAULT_ADDR"),
+        token: Optional[str] = os.environ.get("VAULT_TOKEN"),
+        verify: Optional[bool] = True,
+        scheme: str = "ref+vault://",
+        delay: int = 60,
+        tries: int = 5,
+    ) -> None:
         """Initialized vault client and authenticates vault
 
         Args:
@@ -44,8 +49,16 @@ class Vault(Provider):
         self._secret_values: Dict[str, Union[str, int, float, bool,
                                              List[Any]]] = dict()
 
+        self.delay = delay
+        self.tries = tries
+
         try:
-            self.vault_client.is_authenticated()
+            retry_call(
+                self.vault_client.is_authenticated,
+                exceptions=(RuntimeError, Timeout),
+                delay=self.delay,
+                tries=self.tries,
+            )
         except requests.exceptions.MissingSchema:
             raise RuntimeError(
                 "Gestalt Error: Unable to connect to vault with the given configuration"
@@ -55,7 +68,13 @@ class Vault(Provider):
             try:
                 hvac.api.auth_methods.Kubernetes(
                     self.vault_client.adapter).login(role=role, jwt=jwt)
-                token = self.vault_client.auth.token.lookup_self()
+                token = retry_call(
+                    self.vault_client.auth.token.lookup_self,
+                    exceptions=(RuntimeError, Timeout),
+                    delay=self.delay,
+                    tries=self.tries,
+                )
+
                 if token is not None:
                     kubes_token = (
                         "kubernetes",
@@ -85,7 +104,6 @@ class Vault(Provider):
     def __del__(self) -> None:
         self.stop()
 
-    @retry((RuntimeError, Timeout), delay=3, tries=3)  # type: ignore
     def get(
         self,
         key: str,
@@ -112,7 +130,13 @@ class Vault(Provider):
             return self._secret_values[key]
 
         try:
-            response = self.vault_client.read(path)
+            response = retry_call(
+                self.vault_client.read,
+                fargs=[path],
+                exceptions=(RuntimeError, Timeout),
+                delay=self.delay,
+                tries=self.tries,
+            )
             if response is None:
                 raise RuntimeError("Gestalt Error: No secrets found")
             if response['lease_id']:
