@@ -1,11 +1,11 @@
 # Changelog
-
+***
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## Unreleased
-
+***
 ## [3.3.6] - 2023-06-11
 
 ### Added
@@ -17,5 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Invokes `vault_client` calls through `retry_call` instead
 
 
+## Released
+***
 
+# TODO
 
