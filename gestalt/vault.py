@@ -80,9 +80,9 @@ class Vault(Provider):
                 if token is not None:
                     kubes_token = (
                         "kubernetes",
-                        token["data"]["id"],  # type: ignore
+                        token["data"]["id"],
                         token["data"]["ttl"],
-                    )  # type: ignore
+                    ) 
                     self.kubes_token_queue.put(kubes_token)
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
