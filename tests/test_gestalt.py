@@ -1,4 +1,5 @@
 # type: ignore
+
 from unittest.mock import patch, Mock
 
 from gestalt.vault import Vault
@@ -23,9 +24,21 @@ def test_merge_into():
     merge_into(combine4, combine2)
     merge_into(combine3, combine2)
 
-    assert combine1 == {"local": 1234, "pg": {"host": "dict2_pg", "pass": "dict1_pg"}}
+    assert combine1 == {
+        "local": 1234,
+        "pg": {
+            "host": "dict2_pg",
+            "pass": "dict1_pg"
+        }
+    }
 
-    assert combine2 == {"local": 1234, "pg": {"host": "dict1_pg", "pass": "dict1_pg"}}
+    assert combine2 == {
+        "local": 1234,
+        "pg": {
+            "host": "dict1_pg",
+            "pass": "dict1_pg"
+        }
+    }
 
 
 def test_combine_into_empty_dict():
@@ -243,7 +256,7 @@ def test_get_yaml_nested_default():
     g = gestalt.Gestalt()
     g.add_config_path("./tests/testdata")
     g.build_config()
-    testval = g.get_string("deep_yaml.nest1.nest2.foo", "default")
+    testval = g.get_string("deep_yaml.nest1.nest2.foo", 'default')
     assert testval == "hello"
 
 
@@ -251,7 +264,7 @@ def test_get_yaml_missing_nested_default():
     g = gestalt.Gestalt()
     g.add_config_path("./tests/testdata")
     g.build_config()
-    testval = g.get_string("deep_yaml.nest1.nest2.fob", "default")
+    testval = g.get_string("deep_yaml.nest1.nest2.fob", 'default')
     assert testval == "default"
 
 
@@ -537,7 +550,8 @@ def test_read_no_nest_db_role(mock_db_role_request):
 def test_set_vault_key(nested_setup):
     g = gestalt.Gestalt()
     g.configure_provider("vault", Vault(role=None, jwt=None))
-    g.set_string(key="test", value="ref+vault://secret/data/testnested#.slack.token")
+    g.set_string(key="test",
+                 value="ref+vault://secret/data/testnested#.slack.token")
     g.build_config()
     secret = g.get_string("test")
     assert secret == "ref+vault://secret/data/testnested#.slack.token"
@@ -553,11 +567,10 @@ def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
         if mock_sleep.call_count == 1:
             raise hvac.exceptions.VaultError("some error")
 
-    with patch(
-        "gestalt.vault.sleep", side_effect=except_once, autospec=True
-    ) as mock_sleep:
+    with patch("gestalt.vault.sleep", side_effect=except_once,
+               autospec=True) as mock_sleep:
         with patch("gestalt.vault.hvac.Client") as mock_client:
-            v = Vault(role="test-role", jwt="test-jwt").get("foo", "foo", ".foo")
+            v = Vault(role="test-role", jwt="test-jwt")
 
             mock_k8s_renew.start.assert_called()
 
@@ -585,11 +598,10 @@ def test_vault_worker_k8s(mock_vault_workers):
         if mock_sleep.call_count == 1:
             raise hvac.exceptions.VaultError("some error")
 
-    with patch(
-        "gestalt.vault.sleep", side_effect=except_once, autospec=True
-    ) as mock_sleep:
+    with patch("gestalt.vault.sleep", side_effect=except_once,
+               autospec=True) as mock_sleep:
         with patch("gestalt.vault.hvac.Client") as mock_client:
-            v = Vault(role="test-role", jwt="test-jwt")).get("foo", "foo", "foo")
+            v = Vault(role="test-role", jwt="test-jwt")
 
             mock_k8s_renew.start.assert_called()
 
@@ -611,18 +623,19 @@ def test_vault_start_dynamic_lease(mock_vault_workers):
     mock_response = {
         "lease_id": "1",
         "lease_duration": 5,
-        "data": {"data": "mock_data"},
+        "data": {
+            "data": "mock_data"
+        },
     }
 
-    mock_vault_client_patch = patch(
-        "gestalt.vault.hvac.Client.read", return_value=mock_response
-    )
+    mock_vault_client_patch = patch("gestalt.vault.hvac.Client.read",
+                                    return_value=mock_response)
     with mock_vault_client_patch as mock_vault_client_read:
         mock_dynamic_token_queue = Mock()
         mock_kube_token_queue = Mock()
         with patch(
-            "gestalt.vault.Queue",
-            side_effect=[mock_dynamic_token_queue, mock_kube_token_queue],
+                "gestalt.vault.Queue",
+                side_effect=[mock_dynamic_token_queue, mock_kube_token_queue],
         ) as mock_queues:
             v = Vault(role=None, jwt=None)
             g = gestalt.Gestalt()
