@@ -590,7 +590,13 @@ def test_vault_worker_k8s(mock_vault_workers):
         "gestalt.vault.sleep", side_effect=except_once, autospec=True
     ) as mock_sleep:
         with patch("gestalt.vault.hvac.Client") as mock_client:
-            v = Vault(role="test-role", jwt="test-jwt").get("foo", "foo", "foo")
+            g = gestalt.Gestalt()
+            g.configure_provider("vault", Vault(role=None, jwt=None))
+            g.set_string(
+                key="test", value="ref+vault://secret/data/testnested#.slack.token"
+            )
+            g.build_config()
+            g.get_string("test")
 
             mock_k8s_renew.start.assert_called()
 
@@ -598,7 +604,7 @@ def test_vault_worker_k8s(mock_vault_workers):
             test_token_queue.put(("kubernetes", 1, 100))
 
             with pytest.raises(RuntimeError):
-                v.worker(test_token_queue)
+                g.providers["vault"].worker(test_token_queue)
 
             mock_sleep.assert_called()
             mock_client().auth.token.renew.assert_called()
