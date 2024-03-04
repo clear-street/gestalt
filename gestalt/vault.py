@@ -75,6 +75,7 @@ class Vault(Provider):
                     tries=self.tries,
                 )
 
+                # FOOBAR
                 if token is not None:
                     kubes_token = (
                         "kubernetes",
