@@ -199,10 +199,12 @@ class Vault(Provider):
         """
         Worker function to renew lease on expiry
         """
-
+        print(f"CALLED WORKER")
         try:
             while self._run_worker:
+                print(f"IN RUN WORKER")
                 if not token_queue.empty():
+                    print(f"TOKEN QUEUE NOT EMPTY")
                     token_type, token_id, token_duration = token = token_queue.get()
                     if token_type == "kubernetes":
                         self.vault_client.auth.token.renew(token_id)
