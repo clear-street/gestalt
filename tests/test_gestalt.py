@@ -1,5 +1,4 @@
 # type: ignore
-
 from unittest.mock import patch, Mock
 
 from gestalt.vault import Vault
