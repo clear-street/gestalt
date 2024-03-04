@@ -49,8 +49,10 @@ class Vault(Provider):
         self._jwt: Optional[str] = jwt
         self.delay = delay
         self.tries = tries
+        print("CALLED VAULT INIT")
 
     def connect(self) -> None:
+        print(f"CALLED CONNECT")
         try:
             retry_call(
                 self.vault_client.is_authenticated,
@@ -122,6 +124,7 @@ class Vault(Provider):
         Returns:
             secret (str): secret
         """
+        print(f"CALLED VAULT GET")
         if not self._is_connected:
             self.connect()
         # if the key has been read before and is not a TTL secret
