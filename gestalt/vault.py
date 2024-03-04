@@ -44,13 +44,10 @@ class Vault(Provider):
         self.vault_client = hvac.Client(url=url, token=token, cert=cert, verify=verify)
         self._secret_expiry_times: Dict[str, datetime] = dict()
         self._secret_values: Dict[str, Union[str, int, float, bool, List[Any]]] = dict()
-        self._is_connected: bool = False
-        self._role: Optional[str] = role
-        self._jwt: Optional[str] = jwt
+
         self.delay = delay
         self.tries = tries
 
-    def connect(self) -> None:
         try:
             retry_call(
                 self.vault_client.is_authenticated,
@@ -63,10 +60,10 @@ class Vault(Provider):
                 "Gestalt Error: Unable to connect to vault with the given configuration"
             )
 
-        if self._role and self._jwt:
+        if role and jwt:
             try:
                 hvac.api.auth_methods.Kubernetes(self.vault_client.adapter).login(
-                    role=self._role, jwt=self._jwt
+                    role=role, jwt=jwt
                 )
                 token = retry_call(
                     self.vault_client.auth.token.lookup_self,
@@ -103,7 +100,6 @@ class Vault(Provider):
                 args=(self.kubes_token_queue,),
             )
             kubernetes_ttl_renew.start()
-        self._is_connected = True
 
     def stop(self) -> None:
         self._run_worker = False
@@ -123,8 +119,6 @@ class Vault(Provider):
         Returns:
             secret (str): secret
         """
-        if not self._is_connected:
-            self.connect()
         # if the key has been read before and is not a TTL secret
         if key in self._secret_values and key not in self._secret_expiry_times:
             return self._secret_values[key]
