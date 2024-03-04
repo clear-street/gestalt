@@ -579,7 +579,6 @@ def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
             test_token_queue.put(("dynamic", 1, 100))
 
             with pytest.raises(RuntimeError):
-                print("ABOUT TO TEST")
                 v.worker(test_token_queue)
 
             mock_sleep.assert_called()
@@ -604,6 +603,7 @@ def test_vault_worker_k8s(mock_vault_workers):
                autospec=True) as mock_sleep:
         with patch("gestalt.vault.hvac.Client") as mock_client:
             v = Vault(role="test-role", jwt="test-jwt")
+            v.get("foo", "foo", ".foo")
 
             mock_k8s_renew.start.assert_called()
 
