@@ -562,7 +562,7 @@ def test_vault_lazy_connect():
         assert not v._is_connected
         v.get("foo", "foo", ".foo")
         assert v._is_connected
-        mock_client().sys.rewnew_lease.assert_called()
+        mock_client().sys.renew_lease.assert_called()
 
 def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
     mock_dynamic_renew, mock_k8s_renew = mock_vault_workers
