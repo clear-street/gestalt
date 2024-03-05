@@ -41,18 +41,28 @@ class Vault(Provider):
         self.dynamic_token_queue: Queue[Tuple[str, str, str]] = Queue()
         self.kubes_token_queue: Queue[Tuple[str, str, str]] = Queue()
 
-        self.vault_client = hvac.Client(url=url,
-                                        token=token,
-                                        cert=cert,
-                                        verify=verify)
+        self._vault_client: Optional[hvac.Client] = None
         self._secret_expiry_times: Dict[str, datetime] = dict()
         self._secret_values: Dict[str, Union[str, int, float, bool,
                                              List[Any]]] = dict()
         self._is_connected: bool = False
         self._role: Optional[str] = role
         self._jwt: Optional[str] = jwt
+        self._url: Optional[str] = url
+        self._token: Optional[str] = token
+        self._verify: Optional[bool] = verify
+
         self.delay = delay
         self.tries = tries
+    
+    @property
+    def vault_client(self) -> hvac.Client:
+        if self._vault_client is None:
+            self._vault_client = hvac.Client(url=self._url,
+                                             token=self._token,
+                                             cert=self._cert,
+                                             verify=self._verify)
+        return self._vault_client
 
     def connect(self) -> None:
         try:
