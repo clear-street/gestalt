@@ -557,9 +557,9 @@ def test_set_vault_key(nested_setup):
     assert secret == "ref+vault://secret/data/testnested#.slack.token"
 
 def test_vault_lazy_connect():
-    v = Vault(role="test-role", jwt="test-jwt")
-    assert not v._is_connected
     with patch("gestalt.vault.hvac.Client") as mock_client:
+        v = Vault(role="test-role", jwt="test-jwt")
+        assert not v._is_connected
         v.get("foo", "foo", ".foo")
         assert v._is_connected
         mock_client().sys.rewnew_lease.assert_called()
