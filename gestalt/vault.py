@@ -55,7 +55,7 @@ class Vault(Provider):
 
         self.delay = delay
         self.tries = tries
-    
+
     @property
     def vault_client(self) -> hvac.Client:
         if self._vault_client is None:
