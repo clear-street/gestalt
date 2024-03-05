@@ -50,6 +50,7 @@ class Vault(Provider):
         self._jwt: Optional[str] = jwt
         self._url: Optional[str] = url
         self._token: Optional[str] = token
+        self._cert: Optional[Tuple[str, str]] = cert
         self._verify: Optional[bool] = verify
 
         self.delay = delay
