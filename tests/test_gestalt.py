@@ -557,6 +557,15 @@ def test_set_vault_key(nested_setup):
     assert secret == "ref+vault://secret/data/testnested#.slack.token"
 
 
+def test_vault_lazy_connect(mock_vault_workers, mock_vault_k8s_auth):
+    with patch("gestalt.vault.hvac.Client") as mock_client:
+        v = Vault(role="test-role", jwt="test-jwt")
+        assert not v._is_connected
+        v.get("foo", "foo", ".foo")
+        assert v._is_connected
+        mock_client().auth.token.lookup_self.assert_called()
+
+
 def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
     mock_dynamic_renew, mock_k8s_renew = mock_vault_workers
 
@@ -571,6 +580,7 @@ def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
                autospec=True) as mock_sleep:
         with patch("gestalt.vault.hvac.Client") as mock_client:
             v = Vault(role="test-role", jwt="test-jwt")
+            v.connect()
 
             mock_k8s_renew.start.assert_called()
 
@@ -602,6 +612,7 @@ def test_vault_worker_k8s(mock_vault_workers):
                autospec=True) as mock_sleep:
         with patch("gestalt.vault.hvac.Client") as mock_client:
             v = Vault(role="test-role", jwt="test-jwt")
+            v.connect()
 
             mock_k8s_renew.start.assert_called()
 

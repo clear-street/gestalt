@@ -41,13 +41,31 @@ class Vault(Provider):
         self.dynamic_token_queue: Queue[Tuple[str, str, str]] = Queue()
         self.kubes_token_queue: Queue[Tuple[str, str, str]] = Queue()
 
-        self.vault_client = hvac.Client(url=url, token=token, cert=cert, verify=verify)
+        self._vault_client: Optional[hvac.Client] = None
         self._secret_expiry_times: Dict[str, datetime] = dict()
-        self._secret_values: Dict[str, Union[str, int, float, bool, List[Any]]] = dict()
+        self._secret_values: Dict[str, Union[str, int, float, bool,
+                                             List[Any]]] = dict()
+        self._is_connected: bool = False
+        self._role: Optional[str] = role
+        self._jwt: Optional[str] = jwt
+        self._url: Optional[str] = url
+        self._token: Optional[str] = token
+        self._cert: Optional[Tuple[str, str]] = cert
+        self._verify: Optional[bool] = verify
 
         self.delay = delay
         self.tries = tries
 
+    @property
+    def vault_client(self) -> hvac.Client:
+        if self._vault_client is None:
+            self._vault_client = hvac.Client(url=self._url,
+                                             token=self._token,
+                                             cert=self._cert,
+                                             verify=self._verify)
+        return self._vault_client
+
+    def connect(self) -> None:
         try:
             retry_call(
                 self.vault_client.is_authenticated,
@@ -60,11 +78,11 @@ class Vault(Provider):
                 "Gestalt Error: Unable to connect to vault with the given configuration"
             )
 
-        if role and jwt:
+        if self._role and self._jwt:
             try:
-                hvac.api.auth_methods.Kubernetes(self.vault_client.adapter).login(
-                    role=role, jwt=jwt
-                )
+                hvac.api.auth_methods.Kubernetes(
+                    self.vault_client.adapter).login(role=self._role,
+                                                     jwt=self._jwt)
                 token = retry_call(
                     self.vault_client.auth.token.lookup_self,
                     exceptions=(RuntimeError, Timeout),
@@ -75,14 +93,13 @@ class Vault(Provider):
                 if token is not None:
                     kubes_token = (
                         "kubernetes",
-                        token["data"]["id"],  # type: ignore
+                        token["data"]["id"],
                         token["data"]["ttl"],
-                    )  # type: ignore
+                    )
                     self.kubes_token_queue.put(kubes_token)
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
-                    "Gestalt Error: Kubernetes auth couldn't be performed"
-                )
+                    "Gestalt Error: Kubernetes auth couldn't be performed")
             except requests.exceptions.ConnectionError:
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
@@ -90,15 +107,16 @@ class Vault(Provider):
                 name="dynamic-token-renew",
                 target=self.worker,
                 daemon=True,
-                args=(self.dynamic_token_queue,),
+                args=(self.dynamic_token_queue, ),
             )  # noqa: F841
             kubernetes_ttl_renew = Thread(
                 name="kubes-token-renew",
                 target=self.worker,
                 daemon=True,
-                args=(self.kubes_token_queue,),
+                args=(self.kubes_token_queue, ),
             )
             kubernetes_ttl_renew.start()
+        self._is_connected = True
 
     def stop(self) -> None:
         self._run_worker = False
@@ -107,7 +125,11 @@ class Vault(Provider):
         self.stop()
 
     def get(
-        self, key: str, path: str, filter: str, sep: Optional[str] = "."
+        self,
+        key: str,
+        path: str,
+        filter: str,
+        sep: Optional[str] = "."
     ) -> Union[str, int, float, bool, List[Any]]:
         """Gets secret from vault
         Args:
@@ -118,12 +140,15 @@ class Vault(Provider):
         Returns:
             secret (str): secret
         """
+        if not self._is_connected:
+            self.connect()
         # if the key has been read before and is not a TTL secret
         if key in self._secret_values and key not in self._secret_expiry_times:
             return self._secret_values[key]
 
         # if the secret can expire but hasn't expired yet
-        if key in self._secret_expiry_times and not self._is_secret_expired(key):
+        if key in self._secret_expiry_times and not self._is_secret_expired(
+                key):
             return self._secret_values[key]
 
         try:
@@ -146,10 +171,10 @@ class Vault(Provider):
             requested_data = response["data"].get("data", response["data"])
         except hvac.exceptions.InvalidPath:
             raise RuntimeError(
-                "Gestalt Error: The secret path or mount is set incorrectly"
-            )
+                "Gestalt Error: The secret path or mount is set incorrectly")
         except requests.exceptions.ConnectionError:
-            raise RuntimeError("Gestalt Error: Gestalt couldn't connect to Vault")
+            raise RuntimeError(
+                "Gestalt Error: Gestalt couldn't connect to Vault")
         except Exception as err:
             raise RuntimeError(f"Gestalt Error: {err}")
         if filter is None:
@@ -175,13 +200,12 @@ class Vault(Provider):
         is_expired = now >= secret_expires_dt
         return is_expired
 
-    def _set_secrets_ttl(self, requested_data: Dict[str, Any], key: str) -> None:
-        last_vault_rotation_str = requested_data["last_vault_rotation"].split(".")[
-            0
-        ]  # to the nearest second
-        last_vault_rotation_dt = datetime.strptime(
-            last_vault_rotation_str, "%Y-%m-%dT%H:%M:%S"
-        )
+    def _set_secrets_ttl(self, requested_data: Dict[str, Any],
+                         key: str) -> None:
+        last_vault_rotation_str = requested_data["last_vault_rotation"].split(
+            ".")[0]  # to the nearest second
+        last_vault_rotation_dt = datetime.strptime(last_vault_rotation_str,
+                                                   "%Y-%m-%dT%H:%M:%S")
         ttl = requested_data["ttl"]
         secret_expires_dt = last_vault_rotation_dt + timedelta(seconds=ttl)
         self._secret_expiry_times[key] = secret_expires_dt
@@ -190,11 +214,11 @@ class Vault(Provider):
         """
         Worker function to renew lease on expiry
         """
-
         try:
             while self._run_worker:
                 if not token_queue.empty():
-                    token_type, token_id, token_duration = token = token_queue.get()
+                    token_type, token_id, token_duration = token = token_queue.get(
+                    )
                     if token_type == "kubernetes":
                         self.vault_client.auth.token.renew(token_id)
                         print("kubernetes token for the app has been renewed")
@@ -206,10 +230,10 @@ class Vault(Provider):
                     sleep((token_duration / 3) * 2)
         except hvac.exceptions.InvalidPath:
             raise RuntimeError(
-                "Gestalt Error: The lease path or mount is set incorrectly"
-            )
+                "Gestalt Error: The lease path or mount is set incorrectly")
         except requests.exceptions.ConnectionError:
-            raise RuntimeError("Gestalt Error: Gestalt couldn't connect to Vault")
+            raise RuntimeError(
+                "Gestalt Error: Gestalt couldn't connect to Vault")
         except Exception as err:
             raise RuntimeError(f"Gestalt Error: {err}")
 
