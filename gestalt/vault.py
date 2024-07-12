@@ -192,7 +192,10 @@ class Vault(Provider):
         if "ttl" in requested_data:
             self._set_secrets_ttl(requested_data, key)
 
-        return returned_value_from_secret  # type: ignore
+        # repr is converting the string to RAW string since \\$ was returning $\
+        # Then we are removing single quotes (first and last char)
+        #
+        return str(repr(returned_value_from_secret))[1:-1]
 
     def _is_secret_expired(self, key: str) -> bool:
         now = datetime.now()

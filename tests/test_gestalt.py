@@ -256,7 +256,7 @@ def test_get_yaml_nested_default():
     g = gestalt.Gestalt()
     g.add_config_path("./tests/testdata")
     g.build_config()
-    testval = g.get_string("deep_yaml.nest1.nest2.foo", 'default')
+    testval = g.get_string("deep_yaml.nest1.nest2.foo", "default")
     assert testval == "hello"
 
 
@@ -264,7 +264,7 @@ def test_get_yaml_missing_nested_default():
     g = gestalt.Gestalt()
     g.add_config_path("./tests/testdata")
     g.build_config()
-    testval = g.get_string("deep_yaml.nest1.nest2.fob", 'default')
+    testval = g.get_string("deep_yaml.nest1.nest2.fob", "default")
     assert testval == "default"
 
 
@@ -515,7 +515,7 @@ def test_vault_mount_path(mount_setup):
     g.configure_provider("vault", Vault(role=None, jwt=None))
     g.build_config()
     secret = g.get_string("test_mount.test_mount")
-    assert secret == "test_mount_password"
+    assert secret == r"test_mount_password\\$"
 
 
 def test_vault_incorrect_path(mount_setup):
