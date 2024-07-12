@@ -8,7 +8,7 @@ def test_get(mount_setup):
     mount_setup_path = "test-mount/data/test"
     key = "test_mount"
     filter_ = f".{key}"
-    expected = "test_mount_password"
+    expected = r"test_mount_password\\$"
     vault = Vault()
     result = vault.get(key=key, path=mount_setup_path, filter=filter_)
     assert result == expected

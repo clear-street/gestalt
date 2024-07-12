@@ -8,20 +8,20 @@ import requests
 class MockSession(requests.Session):
     def request(self, *_, **__):
         resp = {
-            'request_id': '230f5e67-e55d-bdae-bd24-c7bc13c1a3e9',
-            'lease_id': '',
-            'renewable': False,
-            'lease_duration': 0,
-            'data': {
-                'last_vault_rotation': '2023-05-31T14:24:41.724285249Z',
-                'password': 'foo',
-                'rotation_period': 60,
-                'ttl': 0,
-                'username': 'foo'
+            "request_id": "230f5e67-e55d-bdae-bd24-c7bc13c1a3e9",
+            "lease_id": "",
+            "renewable": False,
+            "lease_duration": 0,
+            "data": {
+                "last_vault_rotation": "2023-05-31T14:24:41.724285249Z",
+                "password": "foo",
+                "rotation_period": 60,
+                "ttl": 0,
+                "username": "foo",
             },
-            'wrap_info': None,
-            'warnings': None,
-            'auth': None
+            "wrap_info": None,
+            "warnings": None,
+            "auth": None,
         }
         return MockResponse(resp, 200)
 
@@ -50,21 +50,22 @@ def secret_setup():
 
 @pytest.fixture(scope="function")
 def incorrect_env_setup():
-    os.environ['VAULT_ADDR'] = ""
+    os.environ["VAULT_ADDR"] = ""
 
 
 @pytest.fixture(scope="function")
 def mount_setup():
     client = hvac.Client()
     secret_engines_list = client.sys.list_mounted_secrets_engines(
-    )['data'].keys()
+    )["data"].keys()
     if "test-mount/" in secret_engines_list:
         client.sys.disable_secrets_engine(path="test-mount")
     client.sys.enable_secrets_engine(backend_type="kv", path="test-mount")
     client.secrets.kv.v2.create_or_update_secret(
         mount_point="test-mount",
         path="test",
-        secret=dict(test_mount="test_mount_password"))
+        secret=dict(test_mount="test_mount_password\\$"),
+    )
 
 
 @pytest.fixture(scope="function")
