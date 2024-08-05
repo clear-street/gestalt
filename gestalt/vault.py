@@ -40,7 +40,7 @@ class Vault(Provider):
         self._scheme: str = scheme
         self._run_worker = True
         self.dynamic_token_queue: Queue[Tuple[str, str, str]] = Queue()
-        self.kubes_token: Tuple[str, str, str] = ("", "", "")
+        self.kubes_token: Optional[Tuple[str, str, str]] = None
 
         self._vault_client: Optional[hvac.Client] = None
         self._secret_expiry_times: Dict[str, datetime] = dict()
@@ -154,17 +154,7 @@ class Vault(Provider):
             return self._secret_values[key]
         
         # verify if the token still valid, in case not connect()
-        token_details = self.vault_client.auth.token.lookup_self()
-        if token_details is not None and token_details['data'] is not None:
-            expire_time = datetime.fromisoformat(token_details['data']['expire_time'])
-            threshold = timedelta(days=EXPIRATION_THRESHOLD_DAYS)
-            delta_time = expire_time - datetime.now()
-            if delta_time < threshold:
-                self.connect()
-            else:
-                print("Token still valid for: {delta_time} days")
-        else:
-            print("Token information not retreived")
+        self._validate_token_expiration()
 
         try:
             response = retry_call(
@@ -234,7 +224,7 @@ class Vault(Provider):
         """
         try:
             while self._run_worker:
-                if not kube_token:
+                if kube_token:
                     token_type, token_id, token_duration = token = kube_token
                     if token_type == "kubernetes":
                         self.vault_client.auth.token.renew(token_id)
@@ -255,3 +245,16 @@ class Vault(Provider):
     @property
     def scheme(self) -> str:
         return self._scheme
+    
+    def _validate_token_expiration(self):
+        token_details = self.vault_client.auth.token.lookup_self()
+        if token_details is not None and token_details['data'] is not None:
+            expire_time = datetime.fromisoformat(token_details['data']['expire_time'])
+            threshold = timedelta(days=EXPIRATION_THRESHOLD_DAYS)
+            delta_time = expire_time - datetime.now()
+            if delta_time < threshold:
+                self.connect()
+            else:
+                print(f"Token still valid for: {delta_time} days")
+        else:
+            print("Token information not retreived")
