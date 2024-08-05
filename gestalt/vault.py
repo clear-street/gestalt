@@ -153,7 +153,7 @@ class Vault(Provider):
                 key):
             return self._secret_values[key]
         
-        # verify if the token still valid, in case not connect()
+        # verify if the token still valid, in case not, call connect()
         self._validate_token_expiration()
 
         try:

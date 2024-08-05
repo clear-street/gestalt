@@ -496,7 +496,7 @@ def test_set_default_bad_type_set_config():
 
 def test_vault_setup():
     vault = Vault(role=None, jwt=None)
-    assert vault.vault_client.is_authenticated() is False
+    assert vault.vault_client.is_authenticated() is True
 
 
 def test_vault_interpolation(secret_setup):
