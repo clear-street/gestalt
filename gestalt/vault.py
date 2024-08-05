@@ -13,6 +13,7 @@ from retry.api import retry_call
 
 from gestalt.provider import Provider
 
+EXPIRATION_THRESHOLD_DAYS = 5
 
 class Vault(Provider):
     def __init__(
@@ -39,7 +40,7 @@ class Vault(Provider):
         self._scheme: str = scheme
         self._run_worker = True
         self.dynamic_token_queue: Queue[Tuple[str, str, str]] = Queue()
-        self.kubes_token_queue: Queue[Tuple[str, str, str]] = Queue()
+        self.kubes_token: Tuple[str, str, str] = ("", "", "")
 
         self._vault_client: Optional[hvac.Client] = None
         self._secret_expiry_times: Dict[str, datetime] = dict()
@@ -80,6 +81,7 @@ class Vault(Provider):
 
         if self._role and self._jwt:
             try:
+                
                 hvac.api.auth_methods.Kubernetes(
                     self.vault_client.adapter).login(role=self._role,
                                                      jwt=self._jwt)
@@ -96,7 +98,7 @@ class Vault(Provider):
                         token["data"]["id"],
                         token["data"]["ttl"],
                     )
-                    self.kubes_token_queue.put(kubes_token)
+                    self.kubes_token = kubes_token
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
                     "Gestalt Error: Kubernetes auth couldn't be performed")
@@ -113,7 +115,7 @@ class Vault(Provider):
                 name="kubes-token-renew",
                 target=self.worker,
                 daemon=True,
-                args=(self.kubes_token_queue, ),
+                args=(self.kubes_token, ),
             )
             kubernetes_ttl_renew.start()
         self._is_connected = True
@@ -150,6 +152,19 @@ class Vault(Provider):
         if key in self._secret_expiry_times and not self._is_secret_expired(
                 key):
             return self._secret_values[key]
+        
+        # verify if the token still valid, in case not connect()
+        token_details = self.vault_client.auth.token.lookup_self()
+        if token_details is not None and token_details['data'] is not None:
+            expire_time = datetime.fromisoformat(token_details['data']['expire_time'])
+            threshold = timedelta(days=EXPIRATION_THRESHOLD_DAYS)
+            delta_time = expire_time - datetime.now()
+            if delta_time < threshold:
+                self.connect()
+            else:
+                print("Token still valid for: {delta_time} days")
+        else:
+            print("Token information not retreived")
 
         try:
             response = retry_call(
@@ -213,23 +228,20 @@ class Vault(Provider):
         secret_expires_dt = last_vault_rotation_dt + timedelta(seconds=ttl)
         self._secret_expiry_times[key] = secret_expires_dt
 
-    def worker(self, token_queue: Queue) -> None:  # type: ignore
+    def worker(self, kube_token: Tuple) -> None:  # type: ignore
         """
         Worker function to renew lease on expiry
         """
         try:
             while self._run_worker:
-                if not token_queue.empty():
-                    token_type, token_id, token_duration = token = token_queue.get(
-                    )
+                if not kube_token:
+                    token_type, token_id, token_duration = token = kube_token
                     if token_type == "kubernetes":
                         self.vault_client.auth.token.renew(token_id)
                         print("kubernetes token for the app has been renewed")
                     elif token_type == "dynamic":
                         self.vault_client.sys.renew_lease(token_id)
                         print("dynamic token for the app has been renewed")
-                    token_queue.task_done()
-                    token_queue.put_nowait(token)
                     sleep((token_duration / 3) * 2)
         except hvac.exceptions.InvalidPath:
             raise RuntimeError(
