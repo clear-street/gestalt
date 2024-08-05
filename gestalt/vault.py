@@ -249,7 +249,7 @@ class Vault(Provider):
     def _validate_token_expiration(self):
         token_details = self.vault_client.auth.token.lookup_self()
         if token_details is not None and token_details['data'] is not None:
-            expire_time = datetime.fromisoformat(token_details['data']['expire_time'])
+            expire_time = datetime.fromisoformat(str(token_details['data']['expire_time']))
             threshold = timedelta(days=EXPIRATION_THRESHOLD_DAYS)
             delta_time = expire_time - datetime.now()
             if delta_time < threshold:
