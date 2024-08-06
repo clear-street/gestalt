@@ -251,7 +251,7 @@ class Vault(Provider):
         if token_details['data'] is not None:
             
             expire_time = None
-            if 'expire_time' not in token_details['data']['expire_time']:
+            if 'expire_time' not in token_details['data']:
                 print("Key 'expire_time' does not exist in token_details['data']")
                 return None
                 
