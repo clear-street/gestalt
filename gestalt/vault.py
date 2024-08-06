@@ -250,7 +250,7 @@ class Vault(Provider):
         token_details = self.vault_client.auth.token.lookup_self()
         if token_details['data'] is not None:
             # Validate expire_time is present
-            if token_details['data']['expire_time'] is None:
+            if token_details['data'] is None or token_details['data']['expire_time'] is None:
                 print(f"Cannot parse expire_time, value is None: {token_details['data']}")
                 return None
             
