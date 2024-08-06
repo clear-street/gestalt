@@ -585,7 +585,7 @@ def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
             mock_k8s_renew.start.assert_called()
 
             test_token = ("dynamic", 1, 100)
-        
+
             with pytest.raises(RuntimeError):
                 v.worker(test_token)
 
@@ -655,7 +655,8 @@ def test_vault_start_dynamic_lease(mock_vault_workers):
 
             mock_vault_client_read.assert_called()
             mock_dynamic_token_queue.put_nowait.assert_called()
-            assert mock_kube_token == ("kubernetes", "hvs.CAESIEkz-UO8yvfC8v", "2764799")
+            assert mock_kube_token == ("kubernetes", "hvs.CAESIEkz-UO8yvfC8v",
+                                       "2764799")
 
             mock_vault_client_read.stop()
             mock_dynamic_token_queue.stop()

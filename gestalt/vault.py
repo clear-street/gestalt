@@ -17,6 +17,7 @@ EXPIRATION_THRESHOLD_DAYS = 5
 
 
 class Vault(Provider):
+
     def __init__(
         self,
         cert: Optional[Tuple[str, str]] = None,
@@ -126,13 +127,12 @@ class Vault(Provider):
     def __del__(self) -> None:
         self.stop()
 
-    def get(
-        self,
-        key: str,
-        path: str,
-        filter: str,
-        sep: Optional[str] = "."
-    ) -> Union[str, int, float, bool, List[Any]]:
+    def get(self,
+            key: str,
+            path: str,
+            filter: str,
+            sep: Optional[str] = "."
+            ) -> Union[str, int, float, bool, List[Any]]:
         """Gets secret from vault
         Args:
             key (str): key to get secret from
@@ -152,7 +152,7 @@ class Vault(Provider):
         if key in self._secret_expiry_times and not self._is_secret_expired(
                 key):
             return self._secret_values[key]
-        
+
         # verify if the token still valid, in case not, call connect()
         self._validate_token_expiration()
 
@@ -245,20 +245,22 @@ class Vault(Provider):
     @property
     def scheme(self) -> str:
         return self._scheme
-    
+
     def _validate_token_expiration(self) -> None:
         token_details = self.vault_client.auth.token.lookup_self()
         if token_details['data'] is not None:
-            
+
             expire_time = None
             if 'expire_time' not in token_details['data']:
-                print("Key 'expire_time' does not exist in token_details['data']")
-                return None  
+                print(
+                    "Key 'expire_time' does not exist in token_details['data']"
+                )
+                return None
             # Validate expire_time is present
             if expire_time is None:
                 print("Cannot parse expire_time, value is None")
                 return None
-            
+
             expire_time = str(expire_time)
             threshold = timedelta(days=EXPIRATION_THRESHOLD_DAYS)
             delta_time = expire_time - datetime.now()
