@@ -249,15 +249,16 @@ class Vault(Provider):
     def _validate_token_expiration(self):
         token_details = self.vault_client.auth.token.lookup_self()
         if token_details['data'] is not None:
-            
             # Validate expire_time is present
             if token_details['data']['expire_time'] is None:
-                raise ValueError(f"Cannot parse expire_time, value is None: {token_details['data']}")
+                print(f"Cannot parse expire_time, value is None: {token_details['data']}")
+                return None
             
             expire_time = datetime.fromisoformat(str(token_details['data']['expire_time']))
             threshold = timedelta(days=EXPIRATION_THRESHOLD_DAYS)
             delta_time = expire_time - datetime.now()
             if delta_time < threshold:
+                print(f"Re-auth with vault.")
                 self.connect()
             else:
                 print(f"Token still valid for: {delta_time} days")
