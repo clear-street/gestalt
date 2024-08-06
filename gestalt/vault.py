@@ -246,7 +246,7 @@ class Vault(Provider):
     def scheme(self) -> str:
         return self._scheme
     
-    def _validate_token_expiration(self):
+    def _validate_token_expiration(self) -> None:
         token_details = self.vault_client.auth.token.lookup_self()
         if token_details['data'] is not None:
             
