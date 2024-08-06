@@ -15,6 +15,7 @@ from gestalt.provider import Provider
 
 EXPIRATION_THRESHOLD_DAYS = 5
 
+
 class Vault(Provider):
     def __init__(
         self,
@@ -81,7 +82,6 @@ class Vault(Provider):
 
         if self._role and self._jwt:
             try:
-                
                 hvac.api.auth_methods.Kubernetes(
                     self.vault_client.adapter).login(role=self._role,
                                                      jwt=self._jwt)
@@ -253,8 +253,7 @@ class Vault(Provider):
             expire_time = None
             if 'expire_time' not in token_details['data']:
                 print("Key 'expire_time' does not exist in token_details['data']")
-                return None
-                
+                return None  
             # Validate expire_time is present
             if expire_time is None:
                 print("Cannot parse expire_time, value is None")
