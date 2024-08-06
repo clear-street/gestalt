@@ -264,7 +264,7 @@ class Vault(Provider):
             expire_time = str(expire_time)
             threshold = timedelta(minutes=10) # timedelta(days=EXPIRATION_THRESHOLD_DAYS)
             delta_time = expire_time - datetime.now()
-            if delta_time < threshold:
+            if delta_time <= threshold:
                 print(f"Re-auth with vault.")
                 self.connect()
             else:
