@@ -579,16 +579,15 @@ def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
     with patch("gestalt.vault.sleep", side_effect=except_once,
                autospec=True) as mock_sleep:
         with patch("gestalt.vault.hvac.Client") as mock_client:
-            v = Vault(role="test-role", jwt="test-jwt")
-            v.connect()
+            vault = Vault(role="test-role", jwt="test-jwt")
+            vault.connect()
 
             mock_k8s_renew.start.assert_called()
 
-            test_token_queue = Queue(maxsize=0)
-            test_token_queue.put(("dynamic", 1, 100))
+            test_token = ("kubernetes", "hvs.CAESIEkz-UO8yvfC8v", "2764799")
 
             with pytest.raises(RuntimeError):
-                v.worker(test_token_queue)
+                vault.worker(test_token)
 
             mock_sleep.assert_called()
             mock_client().sys.renew_lease.assert_called()
@@ -611,16 +610,15 @@ def test_vault_worker_k8s(mock_vault_workers):
     with patch("gestalt.vault.sleep", side_effect=except_once,
                autospec=True) as mock_sleep:
         with patch("gestalt.vault.hvac.Client") as mock_client:
-            v = Vault(role="test-role", jwt="test-jwt")
-            v.connect()
+            vault = Vault(role="test-role", jwt="test-jwt")
+            vault.connect()
 
             mock_k8s_renew.start.assert_called()
 
-            test_token_queue = Queue(maxsize=0)
-            test_token_queue.put(("kubernetes", 1, 100))
+            test_token = ("kubernetes", "hvs.CAESIEkz-UO8yvfC8v", "2764799")
 
             with pytest.raises(RuntimeError):
-                v.worker(test_token_queue)
+                vault.worker(test_token)
 
             mock_sleep.assert_called()
             mock_client().auth.token.renew.assert_called()
