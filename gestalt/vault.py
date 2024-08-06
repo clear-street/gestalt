@@ -17,7 +17,6 @@ EXPIRATION_THRESHOLD_DAYS = 5
 
 
 class Vault(Provider):
-
     def __init__(
         self,
         cert: Optional[Tuple[str, str]] = None,
@@ -127,12 +126,13 @@ class Vault(Provider):
     def __del__(self) -> None:
         self.stop()
 
-    def get(self,
-            key: str,
-            path: str,
-            filter: str,
-            sep: Optional[str] = "."
-            ) -> Union[str, int, float, bool, List[Any]]:
+    def get(
+        self,
+        key: str,
+        path: str,
+        filter: str,
+        sep: Optional[str] = "."
+    ) -> Union[str, int, float, bool, List[Any]]:
         """Gets secret from vault
         Args:
             key (str): key to get secret from
