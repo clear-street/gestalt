@@ -251,8 +251,8 @@ class Vault(Provider):
         if token_details['data'] is not None:
             
             # Validate expire_time is present
-            if token_details['data']['expire_time'] is not None:
-                raise ValueError(f"Cannot parse to expire_time, value is None: {token_details['data']}")
+            if token_details['data']['expire_time'] is None:
+                raise ValueError(f"Cannot parse expire_time, value is None: {token_details['data']}")
             
             expire_time = datetime.fromisoformat(str(token_details['data']['expire_time']))
             threshold = timedelta(days=EXPIRATION_THRESHOLD_DAYS)
