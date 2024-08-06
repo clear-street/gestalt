@@ -584,8 +584,8 @@ def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
 
             mock_k8s_renew.start.assert_called()
 
-            test_token = ("kubernetes", "hvs.CAESIEkz-UO8yvfC8v", "2764799")
-
+            test_token = ("kubernetes", 1, 100)
+        
             with pytest.raises(RuntimeError):
                 v.worker(test_token)
 
@@ -612,10 +612,11 @@ def test_vault_worker_k8s(mock_vault_workers):
         with patch("gestalt.vault.hvac.Client") as mock_client:
             v = Vault(role="test-role", jwt="test-jwt")
             v.connect()
+            print(f"Run worker active: {v._run_worker}")
 
             mock_k8s_renew.start.assert_called()
 
-            test_token = ("kubernetes", "hvs.CAESIEkz-UO8yvfC8v", "2764799")
+            test_token = ("kubernetes", 1, 100)
 
             with pytest.raises(RuntimeError):
                 v.worker(test_token)
