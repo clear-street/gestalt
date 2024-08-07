@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
+## [3.4.2] - 2024-08-05
+
+### Fixed
+- Adding logic to check when the token is about to expire to re-connect. This fix cases for services that are running longer that token's ttl without restarting. Causing requests to get a Permission denied error.  
+
+
 ## [3.4.1] - 2024-07-12
 
 ### Fixed
