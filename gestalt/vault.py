@@ -256,6 +256,8 @@ class Vault(Provider):
                     "Key 'expire_time' does not exist in token_details['data']"
                 )
                 return None
+            
+            expire_time = token_details['data']['expire_time']
             # Validate expire_time is present
             if expire_time is None:
                 print("Cannot parse expire_time, value is None")
