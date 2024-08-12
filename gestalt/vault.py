@@ -263,21 +263,21 @@ class Vault(Provider):
             if expire_time is None:
                 print("Cannot parse expire_time, value is None")
                 return None
-            
+
             # Use isoparse to correctly parse the datetime string
             expire_time = isoparse(expire_time)
-            
+
             # Ensure the parsed time is in UTC
             if expire_time.tzinfo is None:
                 expire_time = expire_time.replace(tzinfo=timezone.utc)
             else:
                 expire_time = expire_time.astimezone(timezone.utc)
-            
+
             threshold = timedelta(
                 hours=24)  # timedelta(days=EXPIRATION_THRESHOLD_DAYS)
             current_time = datetime.now(timezone.utc)
             delta_time = expire_time - current_time
-            
+
             if delta_time <= threshold:
                 print(f"Re-auth with vault.")
                 self.connect()
