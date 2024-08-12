@@ -12,6 +12,7 @@ from requests.exceptions import Timeout
 from retry.api import retry_call
 
 from gestalt.provider import Provider
+from dateutil.parser import isoparse
 
 EXPIRATION_THRESHOLD_DAYS = 5
 
@@ -263,10 +264,15 @@ class Vault(Provider):
                 print("Cannot parse expire_time, value is None")
                 return None
             
-            # Truncate the fractional seconds to 6 digits before parsing
-            expire_time = expire_time[:26] + 'Z'
+            # Use isoparse to correctly parse the datetime string
+            expire_time = isoparse(expire_time)
             
-            expire_time = datetime.strptime(str(expire_time), '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)
+            # Ensure the parsed time is in UTC
+            if expire_time.tzinfo is None:
+                expire_time = expire_time.replace(tzinfo=timezone.utc)
+            else:
+                expire_time = expire_time.astimezone(timezone.utc)
+            
             threshold = timedelta(
                 hours=24)  # timedelta(days=EXPIRATION_THRESHOLD_DAYS)
             current_time = datetime.now(timezone.utc)
