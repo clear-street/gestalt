@@ -268,7 +268,7 @@ class Vault(Provider):
             
             expire_time = datetime.strptime(str(expire_time), '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)
             threshold = timedelta(
-                minutes=10)  # timedelta(days=EXPIRATION_THRESHOLD_DAYS)
+                hours=24)  # timedelta(days=EXPIRATION_THRESHOLD_DAYS)
             current_time = datetime.now(timezone.utc)
             delta_time = expire_time - current_time
             
