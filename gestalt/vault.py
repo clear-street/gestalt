@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from queue import Queue
 from threading import Thread
 from time import sleep
@@ -263,10 +263,12 @@ class Vault(Provider):
                 print("Cannot parse expire_time, value is None")
                 return None
 
-            expire_time = str(expire_time)
+            expire_time = datetime.strptime(str(expire_time), '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)
             threshold = timedelta(
                 minutes=10)  # timedelta(days=EXPIRATION_THRESHOLD_DAYS)
-            delta_time = expire_time - datetime.now()
+            current_time = datetime.now(timezone.utc)
+            delta_time = expire_time - current_time
+            
             if delta_time <= threshold:
                 print(f"Re-auth with vault.")
                 self.connect()
