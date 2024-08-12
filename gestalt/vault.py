@@ -262,7 +262,10 @@ class Vault(Provider):
             if expire_time is None:
                 print("Cannot parse expire_time, value is None")
                 return None
-
+            
+            # Truncate the fractional seconds to 6 digits before parsing
+            expire_time = expire_time[:26] + 'Z'
+            
             expire_time = datetime.strptime(str(expire_time), '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)
             threshold = timedelta(
                 minutes=10)  # timedelta(days=EXPIRATION_THRESHOLD_DAYS)
