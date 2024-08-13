@@ -611,7 +611,7 @@ def test_vault_worker_k8s(mock_vault_workers):
         with patch("gestalt.vault.hvac.Client") as mock_client:
             v = Vault(role="test-role", jwt="test-jwt")
             v.connect()
-            v.kube_token = ("dynamic", 1, 100)
+            v.kube_token = ("kubernetes", 1, 100)
 
             mock_k8s_renew.start.assert_called()
 
