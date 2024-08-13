@@ -229,7 +229,7 @@ class Vault(Provider):
         Worker function to renew lease on expiry
         """
         try:
-            while self._run_worker:
+            while not self.stop_event.is_set() and self._run_worker:
                 if kube_token:
                     token_type, token_id, token_duration = kube_token
                     if token_type == "kubernetes":
