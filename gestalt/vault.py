@@ -286,19 +286,3 @@ class Vault(Provider):
                 print(f"Token still valid for: {delta_time.days} days")
         else:
             print("Token information not retreived")
-
-    # def _parse_expire_time(expire_time: str):
-    #     try:
-    #         expire_time = isoparse(expire_time)
-    #         return expire_time
-    #     except ValueError as e:
-    #         raise RuntimeError(
-    #             f" Error: Failed to parse expire_time: {expire_time}. Error: {e}"
-    #         )
-
-    # def _stop_all_threads(self, thread: Optional[Thread]):
-    #     if thread is not None and thread.is_alive():
-    #         self.stop_event.set()  # Signal the thread to stop
-    #         thread.join()  # Wait for the thread to finish
-    #         print("Thread stopped.")
-    #         self.stop_event.clear()
