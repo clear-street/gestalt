@@ -58,7 +58,7 @@ class Vault(Provider):
 
         self.delay = delay
         self.tries = tries
-        
+
         self.stop_event = Event()
 
     @property
@@ -114,8 +114,8 @@ class Vault(Provider):
                 daemon=True,
                 args=(self.dynamic_token_queue, ),
             )  # noqa: F841
-            
-            # 
+
+            #
             self._stop_all_threads(self.kubernetes_ttl_renew)
             self.kubernetes_ttl_renew = Thread(
                 name="kubes-token-renew",
@@ -294,7 +294,9 @@ class Vault(Provider):
             expire_time = isoparse(expire_time)
             return expire_time
         except ValueError as e:
-            raise RuntimeError(f" Error: Failed to parse expire_time: {expire_time}. Error: {e}")
+            raise RuntimeError(
+                f" Error: Failed to parse expire_time: {expire_time}. Error: {e}"
+            )
 
     def _stop_all_threads(self, thread: Thread):
         if thread and thread.is_alive():
