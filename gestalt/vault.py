@@ -58,7 +58,7 @@ class Vault(Provider):
 
         self.delay = delay
         self.tries = tries
-
+        self.kubernetes_ttl_renew = None
         self.stop_event = Event()
 
     @property
