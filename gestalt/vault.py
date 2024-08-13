@@ -228,8 +228,8 @@ class Vault(Provider):
         """
         try:
             while self._run_worker:
-                if self.kube_token:
-                    token_type, token_id, token_duration = self.kube_token
+                if self.kubes_token:
+                    token_type, token_id, token_duration = self.kubes_token
                     if token_type == "kubernetes":
                         self.vault_client.auth.token.renew(token_id)
                         print("kubernetes token for the app has been renewed")
