@@ -121,7 +121,7 @@ class Vault(Provider):
                     daemon=True,
                 )
                 self.kubernetes_ttl_renew.start()
-                
+
         self._is_connected = True
 
     def stop(self) -> None:
@@ -222,7 +222,7 @@ class Vault(Provider):
         secret_expires_dt = last_vault_rotation_dt + timedelta(seconds=ttl)
         self._secret_expiry_times[key] = secret_expires_dt
 
-    def worker(self) -> None:  # type: ignore
+    def worker(self) -> None:
         """
         Worker function to renew lease on expiry
         """
@@ -236,7 +236,7 @@ class Vault(Provider):
                     elif token_type == "dynamic":
                         self.vault_client.sys.renew_lease(token_id)
                         print("dynamic token for the app has been renewed")
-                    sleep((token_duration / 3) * 2)
+                    sleep((token_duration / 3) * 2)  # type: ignore
         except hvac.exceptions.InvalidPath:
             raise RuntimeError(
                 "Gestalt Error: The lease path or mount is set incorrectly")
@@ -268,7 +268,7 @@ class Vault(Provider):
 
             # Use isoparse to correctly parse the datetime string
             expire_time = isoparse(expire_time)
-            
+
             # Ensure the parsed time is in UTC
             if expire_time.tzinfo is None:
                 expire_time = expire_time.replace(tzinfo=timezone.utc)
