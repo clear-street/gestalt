@@ -299,7 +299,7 @@ class Vault(Provider):
             )
 
     def _stop_all_threads(self, thread: Thread):
-        if thread and thread.is_alive():
+        if thread is not None and thread.is_alive():
             self.stop_event.set()  # Signal the thread to stop
             thread.join()  # Wait for the thread to finish
             print("Thread stopped.")
