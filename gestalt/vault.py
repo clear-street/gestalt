@@ -59,7 +59,6 @@ class Vault(Provider):
         self.delay = delay
         self.tries = tries
         self.kubernetes_ttl_renew = None
-        self.stop_event = Event()
 
     @property
     def vault_client(self) -> hvac.Client:
@@ -115,15 +114,14 @@ class Vault(Provider):
                 args=(self.dynamic_token_queue, ),
             )  # noqa: F841
 
-            #
-            self._stop_all_threads(self.kubernetes_ttl_renew)
-            self.kubernetes_ttl_renew = Thread(
-                name="kubes-token-renew",
-                target=self.worker,
-                daemon=True,
-                args=(self.kubes_token, ),
-            )
-            self.kubernetes_ttl_renew.start()
+            if self.kubernetes_ttl_renew is None:
+                self.kubernetes_ttl_renew = Thread(
+                    name="kubes-token-renew",
+                    target=self.worker,
+                    daemon=True,
+                )
+                self.kubernetes_ttl_renew.start()
+                
         self._is_connected = True
 
     def stop(self) -> None:
@@ -224,14 +222,14 @@ class Vault(Provider):
         secret_expires_dt = last_vault_rotation_dt + timedelta(seconds=ttl)
         self._secret_expiry_times[key] = secret_expires_dt
 
-    def worker(self, kube_token: Tuple) -> None:  # type: ignore
+    def worker(self) -> None:  # type: ignore
         """
         Worker function to renew lease on expiry
         """
         try:
-            while not self.stop_event.is_set() and self._run_worker:
-                if kube_token:
-                    token_type, token_id, token_duration = kube_token
+            while self._run_worker:
+                if self.kube_token:
+                    token_type, token_id, token_duration = self.kube_token
                     if token_type == "kubernetes":
                         self.vault_client.auth.token.renew(token_id)
                         print("kubernetes token for the app has been renewed")
@@ -269,8 +267,8 @@ class Vault(Provider):
                 return None
 
             # Use isoparse to correctly parse the datetime string
-            expire_time = self._parse_expire_time(expire_time)
-
+            expire_time = isoparse(expire_time)
+            
             # Ensure the parsed time is in UTC
             if expire_time.tzinfo is None:
                 expire_time = expire_time.replace(tzinfo=timezone.utc)
@@ -289,18 +287,18 @@ class Vault(Provider):
         else:
             print("Token information not retreived")
 
-    def _parse_expire_time(expire_time):
-        try:
-            expire_time = isoparse(expire_time)
-            return expire_time
-        except ValueError as e:
-            raise RuntimeError(
-                f" Error: Failed to parse expire_time: {expire_time}. Error: {e}"
-            )
+    # def _parse_expire_time(expire_time: str):
+    #     try:
+    #         expire_time = isoparse(expire_time)
+    #         return expire_time
+    #     except ValueError as e:
+    #         raise RuntimeError(
+    #             f" Error: Failed to parse expire_time: {expire_time}. Error: {e}"
+    #         )
 
-    def _stop_all_threads(self, thread: Thread):
-        if thread is not None and thread.is_alive():
-            self.stop_event.set()  # Signal the thread to stop
-            thread.join()  # Wait for the thread to finish
-            print("Thread stopped.")
-            self.stop_event.clear()
+    # def _stop_all_threads(self, thread: Optional[Thread]):
+    #     if thread is not None and thread.is_alive():
+    #         self.stop_event.set()  # Signal the thread to stop
+    #         thread.join()  # Wait for the thread to finish
+    #         print("Thread stopped.")
+    #         self.stop_event.clear()
