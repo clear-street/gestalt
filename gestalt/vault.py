@@ -14,7 +14,7 @@ from retry.api import retry_call
 from gestalt.provider import Provider
 from dateutil.parser import isoparse
 
-EXPIRATION_THRESHOLD_DAYS = 5
+EXPIRATION_THRESHOLD_DAYS = 7
 
 
 class Vault(Provider):
@@ -273,8 +273,7 @@ class Vault(Provider):
             else:
                 expire_time = expire_time.astimezone(timezone.utc)
 
-            threshold = timedelta(
-                hours=24)  # timedelta(days=EXPIRATION_THRESHOLD_DAYS)
+            threshold = timedelta(days=EXPIRATION_THRESHOLD_DAYS)
             current_time = datetime.now(timezone.utc)
             delta_time = expire_time - current_time
 
@@ -282,6 +281,6 @@ class Vault(Provider):
                 print(f"Re-auth with vault.")
                 self.connect()
             else:
-                print(f"Token still valid for: {delta_time} days")
+                print(f"Token still valid for: {delta_time.days} days")
         else:
             print("Token information not retreived")
