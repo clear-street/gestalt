@@ -252,6 +252,7 @@ class Vault(Provider):
 
     def _validate_token_expiration(self) -> None:
         token_details = self.vault_client.auth.token.lookup_self()
+        print(token_details)
         if token_details['data'] is not None:
             expire_time = None
             if 'expire_time' not in token_details['data']:
