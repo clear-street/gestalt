@@ -560,7 +560,7 @@ def test_set_vault_key(nested_setup):
 def test_vault_lazy_connect(mock_vault_k8s_auth):
     with patch("gestalt.vault.hvac.Client") as mock_client:
         v = Vault(role="test-role", jwt="test-jwt")
-        v.vault_client.auth.token.lookup_self = lambda: {"data": {"id": "foo", "ttl": "foo", "expire_time": "2024-08-15T22:04:49.82981496Z"}}
+        v.vault_client.auth.token.lookup_self = MagicMock(return_value={"data": {"id": "foo", "ttl": "foo", "expire_time": "2024-08-15T22:04:49.82981496Z"}})
         assert not v._is_connected
         v.get("foo", "foo", ".foo")
         assert v._is_connected
