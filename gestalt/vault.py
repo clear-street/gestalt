@@ -42,7 +42,7 @@ class Vault(Provider):
         self._scheme: str = scheme
         self._run_worker = True
         self.dynamic_token_queue: Queue[Tuple[str, str, str]] = Queue()
-        self.kubes_token: Optional[Tuple[str, str, str]] = None
+        self.kubes_token: Optional[Tuple[str, str, str, str]] = None
 
         self._vault_client: Optional[hvac.Client] = None
         self._secret_expiry_times: Dict[str, datetime] = dict()
