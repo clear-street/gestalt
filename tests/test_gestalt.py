@@ -557,9 +557,15 @@ def test_set_vault_key(nested_setup):
     assert secret == "ref+vault://secret/data/testnested#.slack.token"
 
 
-def test_vault_lazy_connect(mock_vault_workers, mock_vault_k8s_auth):
+def test_vault_lazy_connect(mock_vault_k8s_auth):
     with patch("gestalt.vault.hvac.Client") as mock_client:
         v = Vault(role="test-role", jwt="test-jwt")
+        v.kubes_token = (
+            "kubernetes",
+            "hvs.CAESICuPyPq_Bp",  # Mocked ID value
+            10801,  # Mocked TTL value in seconds
+            "2024-08-15T00:00:00Z"  # Mocked ISO 8601 expire_time
+        )
         assert not v._is_connected
         v.get("foo", "foo", ".foo")
         assert v._is_connected
