@@ -562,9 +562,9 @@ def test_vault_lazy_connect(mock_vault_k8s_auth):
         v = Vault(role="test-role", jwt="test-jwt")
         v.kubes_token = (
             "kubernetes",
-            "hvs.CAESICuPyPq_Bp",  # Mocked ID value
-            10801,  # Mocked TTL value in seconds
-            "2024-08-15T00:00:00Z"  # Mocked ISO 8601 expire_time
+            "hvs.CAESICuPyPq_Bp", 
+            10801, 
+            "2024-08-15T22:04:49.82981496Z" 
         )
         assert not v._is_connected
         v.get("foo", "foo", ".foo")
