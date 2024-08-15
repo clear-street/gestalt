@@ -566,66 +566,6 @@ def test_vault_lazy_connect(mock_vault_workers, mock_vault_k8s_auth):
         mock_client().auth.token.lookup_self.assert_called()
 
 
-# def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
-#     mock_dynamic_renew, mock_k8s_renew = mock_vault_workers
-
-#     mock_sleep = None
-
-#     def except_once(self, **kwargs):
-#         # side effect used to exit the worker loop after one call
-#         if mock_sleep.call_count == 1:
-#             raise hvac.exceptions.VaultError("some error")
-
-#     with patch("gestalt.vault.sleep", side_effect=except_once,
-#                autospec=True) as mock_sleep:
-#         with patch("gestalt.vault.hvac.Client") as mock_client:
-#             v = Vault(role="test-role", jwt="test-jwt")
-#             v.connect()
-#             v.kubes_token = ("dynamic", 1, 100)
-
-#             mock_k8s_renew.start.assert_called()
-
-#             with pytest.raises(RuntimeError):
-#                 v.worker()
-
-#             mock_sleep.assert_called()
-#             mock_client().sys.renew_lease.assert_called()
-#             mock_k8s_renew.start.assert_called_once()
-
-#             mock_dynamic_renew.stop()
-#             mock_k8s_renew.stop()
-
-
-# def test_vault_worker_k8s(mock_vault_workers):
-#     mock_dynamic_renew, mock_k8s_renew = mock_vault_workers
-
-#     mock_sleep = None
-
-#     def except_once(self, **kwargs):
-#         # side effect used to exit the worker loop after one call
-#         if mock_sleep.call_count == 1:
-#             raise hvac.exceptions.VaultError("some error")
-
-#     with patch("gestalt.vault.sleep", side_effect=except_once,
-#                autospec=True) as mock_sleep:
-#         with patch("gestalt.vault.hvac.Client") as mock_client:
-#             v = Vault(role="test-role", jwt="test-jwt")
-#             v.connect()
-#             v.kubes_token = ("kubernetes", 1, 100)
-
-#             mock_k8s_renew.start.assert_called()
-
-#             with pytest.raises(RuntimeError):
-#                 v.worker()
-
-#             mock_sleep.assert_called()
-#             mock_client().auth.token.renew.assert_called()
-#             mock_k8s_renew.start.assert_called_once()
-
-#             mock_dynamic_renew.stop()
-#             mock_k8s_renew.stop()
-
-
 def test_vault_start_dynamic_lease(mock_vault_workers):
     mock_response = {
         "lease_id": "1",
