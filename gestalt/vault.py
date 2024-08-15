@@ -253,9 +253,9 @@ class Vault(Provider):
 
     def _validate_token_expiration(self) -> None:  # type: ignore
         # token_details = self.vault_client.auth.token.lookup_self()
-        expire_time = self.kubes_token[3]
         print(self.kubes_token)
-        if expire_time is not None:
+        if self.kubes_token is not None:
+            expire_time = self.kubes_token[3]
             # Use isoparse to correctly parse the datetime string
             expire_time = isoparse(expire_time)
 
