@@ -42,7 +42,7 @@ class Vault(Provider):
         self._scheme: str = scheme
         self._run_worker = True
         self.dynamic_token_queue: Queue[Tuple[str, str, str]] = Queue()
-        self.kubes_token: Optional[Tuple[str, str, str, str]] = None
+        self.kubes_token: Optional[Tuple[str, str, str, datetime]] = None
 
         self._vault_client: Optional[hvac.Client] = None
         self._secret_expiry_times: Dict[str, datetime] = dict()
@@ -213,7 +213,7 @@ class Vault(Provider):
     def scheme(self) -> str:
         return self._scheme
 
-    def _validate_token_expiration(self) -> None:  # type: ignore
+    def _validate_token_expiration(self) -> None:
         # token_details = self.vault_client.auth.token.lookup_self()
         print(f"Token Stored after K8s Login: {self.kubes_token}")
         if self.kubes_token is not None:
