@@ -58,7 +58,7 @@ class Vault(Provider):
 
         self.delay = delay
         self.tries = tries
-        self.kubernetes_ttl_renew: Optional[Thread] = None
+        # self.kubernetes_ttl_renew: Optional[Thread] = None
 
     @property
     def vault_client(self) -> hvac.Client:
@@ -99,6 +99,7 @@ class Vault(Provider):
                         "kubernetes",
                         token["data"]["id"],
                         token["data"]["ttl"],
+                        token["data"]['expire_time'],
                     )
                     self.kubes_token = kubes_token
             except hvac.exceptions.InvalidPath:
@@ -107,20 +108,20 @@ class Vault(Provider):
             except requests.exceptions.ConnectionError:
                 raise RuntimeError("Gestalt Error: Couldn't connect to Vault")
 
-            dynamic_ttl_renew = Thread(
-                name="dynamic-token-renew",
-                target=self.worker,
-                daemon=True,
-                args=(self.dynamic_token_queue, ),
-            )  # noqa: F841
+            # dynamic_ttl_renew = Thread(
+            #     name="dynamic-token-renew",
+            #     target=self.worker,
+            #     daemon=True,
+            #     args=(self.dynamic_token_queue, ),
+            # )  # noqa: F841
 
-            if self.kubernetes_ttl_renew is None:
-                self.kubernetes_ttl_renew = Thread(
-                    name="kubes-token-renew",
-                    target=self.worker,
-                    daemon=True,
-                )
-                self.kubernetes_ttl_renew.start()
+            # if self.kubernetes_ttl_renew is None:
+            #     self.kubernetes_ttl_renew = Thread(
+            #         name="kubes-token-renew",
+            #         target=self.worker,
+            #         daemon=True,
+            #     )
+            #     self.kubernetes_ttl_renew.start()
 
         self._is_connected = True
 
@@ -222,51 +223,39 @@ class Vault(Provider):
         secret_expires_dt = last_vault_rotation_dt + timedelta(seconds=ttl)
         self._secret_expiry_times[key] = secret_expires_dt
 
-    def worker(self) -> None:
-        """
-        Worker function to renew lease on expiry
-        """
-        try:
-            while self._run_worker:
-                if self.kubes_token:
-                    token_type, token_id, token_duration = self.kubes_token
-                    if token_type == "kubernetes":
-                        self.vault_client.auth.token.renew(token_id)
-                        print("kubernetes token for the app has been renewed")
-                    elif token_type == "dynamic":
-                        self.vault_client.sys.renew_lease(token_id)
-                        print("dynamic token for the app has been renewed")
-                    sleep((token_duration / 3) * 2)  # type: ignore
-        except hvac.exceptions.InvalidPath:
-            raise RuntimeError(
-                "Gestalt Error: The lease path or mount is set incorrectly")
-        except requests.exceptions.ConnectionError:
-            raise RuntimeError(
-                "Gestalt Error: Gestalt couldn't connect to Vault")
-        except Exception as err:
-            raise RuntimeError(f"Gestalt Error: {err}")
+    # def worker(self) -> None:
+    #     """
+    #     Worker function to renew lease on expiry
+    #     """
+    #     try:
+    #         while self._run_worker:
+    #             if self.kubes_token:
+    #                 token_type, token_id, token_duration = self.kubes_token
+    #                 if token_type == "kubernetes":
+    #                     self.vault_client.auth.token.renew(token_id)
+    #                     print("kubernetes token for the app has been renewed")
+    #                 elif token_type == "dynamic":
+    #                     self.vault_client.sys.renew_lease(token_id)
+    #                     print("dynamic token for the app has been renewed")
+    #                 sleep((token_duration / 3) * 2)  # type: ignore
+    #     except hvac.exceptions.InvalidPath:
+    #         raise RuntimeError(
+    #             "Gestalt Error: The lease path or mount is set incorrectly")
+    #     except requests.exceptions.ConnectionError:
+    #         raise RuntimeError(
+    #             "Gestalt Error: Gestalt couldn't connect to Vault")
+    #     except Exception as err:
+    #         raise RuntimeError(f"Gestalt Error: {err}")
 
     @property
     def scheme(self) -> str:
         return self._scheme
 
     def _validate_token_expiration(self) -> None:
-        token_details = self.vault_client.auth.token.lookup_self()
-        print(token_details)
-        if token_details['data'] is not None:
-            expire_time = None
-            if 'expire_time' not in token_details['data']:
-                print(
-                    "Key 'expire_time' does not exist in token_details['data']"
-                )
-                return None
-
-            expire_time = token_details['data']['expire_time']
-            # Validate expire_time is present
-            if expire_time is None:
-                print("Cannot parse expire_time, value is None")
-                return None
-
+        # token_details = self.vault_client.auth.token.lookup_self()
+        expire_time = self.kubes_token[3]
+        print(self.kubes_token)
+        if expire_time is not None:
             # Use isoparse to correctly parse the datetime string
             expire_time = isoparse(expire_time)
 
@@ -286,4 +275,6 @@ class Vault(Provider):
             else:
                 print(f"Token still valid for: {delta_time.days} days")
         else:
-            print("Token information not retreived")
+            print(
+                f"Can't reconnect cause token: {self.kubes_token}, expire_time is None"
+            )
