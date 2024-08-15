@@ -251,7 +251,7 @@ class Vault(Provider):
     def scheme(self) -> str:
         return self._scheme
 
-    def _validate_token_expiration(self) -> None:
+    def _validate_token_expiration(self) -> None:  # type: ignore
         # token_details = self.vault_client.auth.token.lookup_self()
         expire_time = self.kubes_token[3]
         print(self.kubes_token)
