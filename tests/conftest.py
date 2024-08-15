@@ -18,6 +18,7 @@ class MockSession(requests.Session):
                 "rotation_period": 60,
                 "ttl": 0,
                 "username": "foo",
+                "expire_time": "2024-08-15T22:04:49.82981496Z"
             },
             "wrap_info": None,
             "warnings": None,
