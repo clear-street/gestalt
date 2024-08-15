@@ -14,7 +14,7 @@ from retry.api import retry_call
 from gestalt.provider import Provider
 from dateutil.parser import isoparse
 
-EXPIRATION_THRESHOLD_DAYS = 7
+EXPIRATION_THRESHOLD_HOURS = 2
 
 
 class Vault(Provider):
@@ -102,6 +102,7 @@ class Vault(Provider):
                         token["data"]['expire_time'],
                     )
                     self.kubes_token = kubes_token
+                    print(f"Token LookUp after K8s Login: {self.kubes_token}")
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
                     "Gestalt Error: Kubernetes auth couldn't be performed")
@@ -253,7 +254,7 @@ class Vault(Provider):
 
     def _validate_token_expiration(self) -> None:  # type: ignore
         # token_details = self.vault_client.auth.token.lookup_self()
-        print(self.kubes_token)
+        print(f"Token Stored after K8s Login: {self.kubes_token}")
         if self.kubes_token is not None:
             expire_time = self.kubes_token[3]
             # Use isoparse to correctly parse the datetime string
@@ -265,7 +266,7 @@ class Vault(Provider):
             else:
                 expire_time = expire_time.astimezone(timezone.utc)
 
-            threshold = timedelta(days=EXPIRATION_THRESHOLD_DAYS)
+            threshold = timedelta(days=EXPIRATION_THRESHOLD_HOURS)
             current_time = datetime.now(timezone.utc)
             delta_time = expire_time - current_time
 
