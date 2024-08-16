@@ -557,77 +557,21 @@ def test_set_vault_key(nested_setup):
     assert secret == "ref+vault://secret/data/testnested#.slack.token"
 
 
-def test_vault_lazy_connect(mock_vault_workers, mock_vault_k8s_auth):
+def test_vault_lazy_connect(mock_vault_k8s_auth):
     with patch("gestalt.vault.hvac.Client") as mock_client:
         v = Vault(role="test-role", jwt="test-jwt")
+        v.vault_client.auth.token.lookup_self = Mock(
+            return_value={
+                "data": {
+                    "id": "foo",
+                    "ttl": "foo",
+                    "expire_time": "2024-08-15T22:04:49.82981496Z"
+                }
+            })
         assert not v._is_connected
         v.get("foo", "foo", ".foo")
         assert v._is_connected
         mock_client().auth.token.lookup_self.assert_called()
-
-
-def test_vault_worker_dynamic(mock_vault_workers, mock_vault_k8s_auth):
-    mock_dynamic_renew, mock_k8s_renew = mock_vault_workers
-
-    mock_sleep = None
-
-    def except_once(self, **kwargs):
-        # side effect used to exit the worker loop after one call
-        if mock_sleep.call_count == 1:
-            raise hvac.exceptions.VaultError("some error")
-
-    with patch("gestalt.vault.sleep", side_effect=except_once,
-               autospec=True) as mock_sleep:
-        with patch("gestalt.vault.hvac.Client") as mock_client:
-            v = Vault(role="test-role", jwt="test-jwt")
-            v.connect()
-
-            mock_k8s_renew.start.assert_called()
-
-            test_token_queue = Queue(maxsize=0)
-            test_token_queue.put(("dynamic", 1, 100))
-
-            with pytest.raises(RuntimeError):
-                v.worker(test_token_queue)
-
-            mock_sleep.assert_called()
-            mock_client().sys.renew_lease.assert_called()
-            mock_k8s_renew.start.assert_called_once()
-
-            mock_dynamic_renew.stop()
-            mock_k8s_renew.stop()
-
-
-def test_vault_worker_k8s(mock_vault_workers):
-    mock_dynamic_renew, mock_k8s_renew = mock_vault_workers
-
-    mock_sleep = None
-
-    def except_once(self, **kwargs):
-        # side effect used to exit the worker loop after one call
-        if mock_sleep.call_count == 1:
-            raise hvac.exceptions.VaultError("some error")
-
-    with patch("gestalt.vault.sleep", side_effect=except_once,
-               autospec=True) as mock_sleep:
-        with patch("gestalt.vault.hvac.Client") as mock_client:
-            v = Vault(role="test-role", jwt="test-jwt")
-            v.connect()
-
-            mock_k8s_renew.start.assert_called()
-
-            test_token_queue = Queue(maxsize=0)
-            test_token_queue.put(("kubernetes", 1, 100))
-
-            with pytest.raises(RuntimeError):
-                v.worker(test_token_queue)
-
-            mock_sleep.assert_called()
-            mock_client().auth.token.renew.assert_called()
-            mock_k8s_renew.start.assert_called_once()
-
-            mock_dynamic_renew.stop()
-            mock_k8s_renew.stop()
 
 
 def test_vault_start_dynamic_lease(mock_vault_workers):
@@ -643,11 +587,11 @@ def test_vault_start_dynamic_lease(mock_vault_workers):
                                     return_value=mock_response)
     with mock_vault_client_patch as mock_vault_client_read:
         mock_dynamic_token_queue = Mock()
-        mock_kube_token_queue = Mock()
+        mock_kube_token = ("kubernetes", "hvs.CAESIEkz-UO8yvfC8v", "2764799")
         with patch(
                 "gestalt.vault.Queue",
-                side_effect=[mock_dynamic_token_queue, mock_kube_token_queue],
-        ) as mock_queues:
+                side_effect=[mock_dynamic_token_queue],
+        ) as mock_queue:
             v = Vault(role=None, jwt=None)
             g = gestalt.Gestalt()
             g.add_config_file("./tests/testvault/testmount.json")
@@ -657,9 +601,9 @@ def test_vault_start_dynamic_lease(mock_vault_workers):
 
             mock_vault_client_read.assert_called()
             mock_dynamic_token_queue.put_nowait.assert_called()
+            assert mock_kube_token == ("kubernetes", "hvs.CAESIEkz-UO8yvfC8v",
+                                       "2764799")
 
             mock_vault_client_read.stop()
             mock_dynamic_token_queue.stop()
-            mock_kube_token_queue.stop()
-            mock_queues.stop()
-            mock_vault_client_read.stop()
+            mock_queue.stop()

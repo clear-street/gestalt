@@ -18,6 +18,7 @@ class MockSession(requests.Session):
                 "rotation_period": 60,
                 "ttl": 0,
                 "username": "foo",
+                "expire_time": "2024-08-15T22:04:49.82981496Z"
             },
             "wrap_info": None,
             "warnings": None,
@@ -79,9 +80,7 @@ def nested_setup():
 def mock_vault_workers():
     mock_dynamic_renew = Mock()
     mock_k8s_renew = Mock()
-    with patch("gestalt.vault.Thread",
-               side_effect=[mock_dynamic_renew, mock_k8s_renew]):
-        yield (mock_dynamic_renew, mock_k8s_renew)
+    return (mock_dynamic_renew, mock_k8s_renew)
 
 
 @pytest.fixture
