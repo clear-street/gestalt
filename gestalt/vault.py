@@ -1,8 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
 from queue import Queue
-from threading import Thread, Event
-from time import sleep
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import hvac  # type: ignore
@@ -58,7 +56,6 @@ class Vault(Provider):
 
         self.delay = delay
         self.tries = tries
-        # self.kubernetes_ttl_renew: Optional[Thread] = None
 
     @property
     def vault_client(self) -> hvac.Client:
@@ -95,6 +92,7 @@ class Vault(Provider):
                 )
 
                 if token is not None:
+                    print("Kubernetes login successful")
                     kubes_token = (
                         "kubernetes",
                         token["data"]["id"],
@@ -102,7 +100,6 @@ class Vault(Provider):
                         token["data"]['expire_time'],
                     )
                     self.kubes_token = kubes_token
-                    print(f"Token LookUp after K8s Login: {self.kubes_token}")
             except hvac.exceptions.InvalidPath:
                 raise RuntimeError(
                     "Gestalt Error: Kubernetes auth couldn't be performed")
@@ -214,11 +211,8 @@ class Vault(Provider):
         return self._scheme
 
     def _validate_token_expiration(self) -> None:
-        # token_details = self.vault_client.auth.token.lookup_self()
-        print(f"Token Stored after K8s Login: {self.kubes_token}")
         if self.kubes_token is not None:
             expire_time = self.kubes_token[3]
-            print(f"ExpireTime: {expire_time}")
             # Use isoparse to correctly parse the datetime string
             expire_time = isoparse(expire_time)
 
@@ -233,11 +227,11 @@ class Vault(Provider):
             delta_time = (expire_time - current_time).total_seconds() / 3600
 
             if delta_time < EXPIRATION_THRESHOLD_HOURS:
-                print(f"Re-auth with vault")
+                print(f"Re-authenticating with vault")
                 self.connect()
             else:
-                print(f"Token still valid for: {delta_time} days")
+                print(f"Token still valid for: {delta_time} hours")
         else:
             print(
-                f"Can't reconnect cause token: {self.kubes_token}, expire_time is None"
+                f"Can't reconnect, token information: {self.kubes_token}, not valid"
             )
