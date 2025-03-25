@@ -1,7 +1,7 @@
 [project]
 name = "gestalt"
 version = "0.1.0"
-description = "Add your description here"
+description = "Gestalt is an opinionated, strongly typed, configuration library for Python 3.8+. Gestalt aims to simplify configuration loading, getting/setting, and management by letting the user focus on writing programs, and letting Gestalt check configuration types, location, and environment variable overrides."
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
