@@ -31,7 +31,7 @@ dev-dependencies = [
 	"python-dateutil>=2.8.0",
 	"types-retry==0.9.9",
 	"types-python-dateutil>=0.1.0",
-	"importlib-metadata<5.0",
+	"mypy>=0.910",
 ]
 
 [build-system]

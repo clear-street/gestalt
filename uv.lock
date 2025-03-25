@@ -344,7 +344,6 @@ dev = [
     { name = "flake8", version = "5.0.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.8.1'" },
     { name = "flake8", version = "7.1.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.8.1'" },
     { name = "hvac" },
-    { name = "importlib-metadata" },
     { name = "jsonpath-ng" },
     { name = "mypy" },
     { name = "mypy-extensions" },
@@ -374,9 +373,9 @@ requires-dist = [
 dev = [
     { name = "flake8" },
     { name = "hvac", specifier = ">=1.0.2,<1.1.0" },
-    { name = "importlib-metadata", specifier = "<5.0" },
     { name = "jsonpath-ng", specifier = "==1.5.3" },
     { name = "mypy", specifier = "==0.910" },
+    { name = "mypy", specifier = ">=0.910" },
     { name = "mypy-extensions", specifier = "==0.4.3" },
     { name = "pytest", specifier = ">=6.2.5,<7.0" },
     { name = "pytest-asyncio", specifier = "==0.19.0" },
@@ -411,19 +410,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f1/70/7703c29685631f5a7590aa73f1f1d3fa9a380e654b86af429e0934a32f7d/idna-3.10.tar.gz", hash = "sha256:12f65c9b470abda6dc35cf8e63cc574b1c52b11df2c86030af0ac09b01b13ea9", size = 190490 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/76/c6/c88e154df9c4e1a2a66ccf0005a88dfb2650c1dffb6f5ce603dfbd452ce3/idna-3.10-py3-none-any.whl", hash = "sha256:946d195a0d259cbba61165e88e65941f16e9b36ea6ddb97f00452bae8b1287d3", size = 70442 },
-]
-
-[[package]]
-name = "importlib-metadata"
-version = "4.13.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "zipp", version = "3.20.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "zipp", version = "3.21.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/55/12/ab288357b884ebc807e3f4eff63ce5ba6b941ba61499071bf19f1bbc7f7f/importlib_metadata-4.13.0.tar.gz", hash = "sha256:dd0173e8f150d6815e098fd354f6414b0f079af4644ddfe90c71e2fc6174346d", size = 50445 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d0/98/c277899f5aa21f6e6946e1c83f2af650cbfee982763ffb91db07ff7d3a13/importlib_metadata-4.13.0-py3-none-any.whl", hash = "sha256:8a8a81bcf996e74fee46f0d16bd3eaa382a7eb20fd82445c3ad11f4090334116", size = 23010 },
 ]
 
 [[package]]
@@ -825,29 +811,4 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8e/1e/730a64d83e1b6a64bb8efa5358fc8e9418e6c2d19862523dce22be1040ed/yapf-0.29.0.tar.gz", hash = "sha256:712e23c468506bf12cadd10169f852572ecc61b266258422d45aaf4ad7ef43de", size = 181836 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7c/21/534d143afd3df9cae9b21674fcc32207cb80cfb3de56b89ef7a37c746cca/yapf-0.29.0-py2.py3-none-any.whl", hash = "sha256:cad8a272c6001b3401de3278238fdc54997b6c2e56baa751788915f879a52fca", size = 185266 },
-]
-
-[[package]]
-name = "zipp"
-version = "3.20.2"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.8.1' and python_full_version < '3.9'",
-    "python_full_version < '3.8.1'",
-]
-sdist = { url = "https://files.pythonhosted.org/packages/54/bf/5c0000c44ebc80123ecbdddba1f5dcd94a5ada602a9c225d84b5aaa55e86/zipp-3.20.2.tar.gz", hash = "sha256:bc9eb26f4506fda01b81bcde0ca78103b6e62f991b381fec825435c836edbc29", size = 24199 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/8b/5ba542fa83c90e09eac972fc9baca7a88e7e7ca4b221a89251954019308b/zipp-3.20.2-py3-none-any.whl", hash = "sha256:a817ac80d6cf4b23bf7f2828b7cabf326f15a001bea8b1f9b49631780ba28350", size = 9200 },
-]
-
-[[package]]
-name = "zipp"
-version = "3.21.0"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.9'",
-]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/50/bad581df71744867e9468ebd0bcd6505de3b275e06f202c2cb016e3ff56f/zipp-3.21.0.tar.gz", hash = "sha256:2c9958f6430a2040341a52eb608ed6dd93ef4392e02ffe219417c1b28b5dd1f4", size = 24545 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b7/1a/7e4798e9339adc931158c9d69ecc34f5e6791489d469f5e50ec15e35f458/zipp-3.21.0-py3-none-any.whl", hash = "sha256:ac1bbe05fd2991f160ebce24ffbac5f6d11d83dc90891255885223d42b3cd931", size = 9630 },
 ]
