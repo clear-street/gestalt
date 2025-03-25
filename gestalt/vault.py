@@ -170,13 +170,17 @@ class Vault(Provider):
                 "Gestalt Error: Gestalt couldn't connect to Vault")
         except Exception as err:
             raise RuntimeError(f"Gestalt Error: {err}")
+        
         if filter is None:
             return requested_data
+        
         secret = requested_data
         jsonpath_expression = parse(f"${filter}")
         match = jsonpath_expression.find(secret)
+
         if len(match) == 0:
             print("Path returned not matches for your secret")
+
         returned_value_from_secret = match[0].value
         if returned_value_from_secret == "":
             raise RuntimeError("Gestalt Error: Empty secret!")
@@ -188,7 +192,12 @@ class Vault(Provider):
         # repr is converting the string to RAW string since \\$ was returning $\
         # Then we are removing single quotes (first and last char)
         #
-        return str(repr(returned_value_from_secret))[1:-1]
+        # FIXME: @nsethi
+        # TODO: this method is expected to return a typed object, not just a string
+        # should probably put this behind an 
+        if isinstance(returned_value_from_secret, str):
+            return str(repr(returned_value_from_secret))[1:-1]
+        return returned_value_from_secret
 
     def _is_secret_expired(self, key: str) -> bool:
         now = datetime.now()
