@@ -62,7 +62,7 @@ jobs:
     - name: Typecheck with mypy
       run: |
         # run mypy strict mode on gestalt
-        mypy --strict gestalt
+        uv run mypy --strict gestalt
     - name: Style check with yapf
       run: |
-        yapf -d --recursive .
+        uv run yapf -d --recursive .
