@@ -58,7 +58,7 @@ jobs:
         VAULT_ADDR: http://localhost:8200
         VAULT_TOKEN: "myroot"
       run: |
-        uv run pytest -s --cov=gestalt tests/*.py
+        uv run pytest -vv -s --cov=gestalt tests/*.py
     - name: Typecheck with mypy
       run: |
         # run mypy strict mode on gestalt
