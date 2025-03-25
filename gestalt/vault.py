@@ -190,12 +190,11 @@ class Vault(Provider):
         if "ttl" in requested_data:
             self._set_secrets_ttl(requested_data, key)
 
+        # TODO: unclear what this note means, was left my a previous dev along time ago.
+        # should figure out what this does and why it's here.
+        #
         # repr is converting the string to RAW string since \\$ was returning $\
         # Then we are removing single quotes (first and last char)
-        #
-        # FIXME: @nsethi
-        # TODO: this method is expected to return a typed object, not just a string
-        # should probably put this behind an
         if isinstance(returned_value_from_secret, str):
             return str(repr(returned_value_from_secret))[1:-1]
         return returned_value_from_secret
