@@ -67,7 +67,7 @@ def mount_setup():
     client.secrets.kv.v2.create_or_update_secret(
         mount_point="test-mount",
         path="test",
-        secret=dict(test_mount="test_mount_password\\$"),
+        secret=dict(test_mount="test_mount_password\\$", threshold=.18),
     )
 
 

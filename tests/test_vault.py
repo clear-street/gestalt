@@ -14,6 +14,16 @@ def test_get(mount_setup):
     assert result == expected
 
 
+def test_get_float(mount_setup):
+    mount_setup_path = "test-mount/data/test"
+    key = "threshold"
+    filter_ = f".{key}"
+    expected = .18
+    vault = Vault()
+    result = vault.get(key=key, path=mount_setup_path, filter=filter_)
+    assert result == expected
+
+
 def test_get_cache_hit(mock_db_role_request):
     mount_setup_path = "test-mount/data/test"
     key = "password"
