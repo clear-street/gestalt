@@ -32,6 +32,7 @@ dev-dependencies = [
 	"types-retry==0.9.9",
 	"types-python-dateutil>=0.1.0",
 	"mypy>=0.910",
+	"yapf>=0.29.0",
 ]
 
 [build-system]

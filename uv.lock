@@ -388,6 +388,7 @@ dev = [
     { name = "types-requests", specifier = "==2.25.2" },
     { name = "types-retry", specifier = "==0.9.9" },
     { name = "yapf", specifier = "==0.29.0" },
+    { name = "yapf", specifier = ">=0.29.0" },
 ]
 
 [[package]]
