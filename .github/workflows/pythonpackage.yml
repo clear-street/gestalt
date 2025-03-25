@@ -65,4 +65,4 @@ jobs:
         uv run mypy --strict gestalt
     - name: Style check with yapf
       run: |
-        uv run yapf -d --recursive .
+        uv run yapf -d --recursive gestalt tests
