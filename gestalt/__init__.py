@@ -23,6 +23,7 @@ def merge_into(
 
 
 class Gestalt:
+
     def __init__(self) -> None:
         """ Creates the default configuration manager
 
@@ -155,8 +156,8 @@ class Gestalt:
         self.__parse_dictionary_keys(self.__conf_sets)
 
     def __parse_dictionary_keys(
-        self, dictionary: Dict[str, Union[List[Any], str, int, bool, float]]
-    ) -> None:
+        self, dictionary: Dict[str, Union[List[Any], str, int, bool,
+                                          float]]) -> None:
         """Parses the keys in the configuration data.
 
         Raises:
@@ -560,6 +561,7 @@ class Gestalt:
                     f'Given set key is not of type {object_type}, but of type {type(val)}'
                 )
             return val
+
         if self.__use_env:
             e_key = key_to_search.upper().replace(self.__delim_char, '_')
             if e_key in os.environ:
@@ -593,13 +595,16 @@ class Gestalt:
                         break
             else:
                 interpolated_val = val
+
             if not isinstance(interpolated_val, object_type):
                 raise TypeError(
                     f'Given set key is not of type {object_type}, but of type {type(interpolated_val)}'
                 )
             return interpolated_val
+
         if default:
             return default
+
         if key_to_search in self.__conf_defaults:
             val = self.__conf_defaults[key_to_search]
             if not isinstance(val, object_type):

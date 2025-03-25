@@ -16,6 +16,7 @@ EXPIRATION_THRESHOLD_HOURS = 1
 
 
 class Vault(Provider):
+
     def __init__(
         self,
         cert: Optional[Tuple[str, str]] = None,
@@ -114,13 +115,12 @@ class Vault(Provider):
     def __del__(self) -> None:
         self.stop()
 
-    def get(
-        self,
-        key: str,
-        path: str,
-        filter: str,
-        sep: Optional[str] = "."
-    ) -> Union[str, int, float, bool, List[Any]]:
+    def get(self,
+            key: str,
+            path: str,
+            filter: str,
+            sep: Optional[str] = "."
+            ) -> Union[str, int, float, bool, List[Any]]:
         """Gets secret from vault
         Args:
             key (str): key to get secret from
@@ -170,10 +170,10 @@ class Vault(Provider):
                 "Gestalt Error: Gestalt couldn't connect to Vault")
         except Exception as err:
             raise RuntimeError(f"Gestalt Error: {err}")
-        
+
         if filter is None:
             return requested_data
-        
+
         secret = requested_data
         jsonpath_expression = parse(f"${filter}")
         match = jsonpath_expression.find(secret)
@@ -181,7 +181,8 @@ class Vault(Provider):
         if len(match) == 0:
             print("Path returned not matches for your secret")
 
-        returned_value_from_secret: Union[str, int, float, List[Any]] = match[0].value
+        returned_value_from_secret: Union[str, int, float,
+                                          List[Any]] = match[0].value
         if returned_value_from_secret == "":
             raise RuntimeError("Gestalt Error: Empty secret!")
 
@@ -194,7 +195,7 @@ class Vault(Provider):
         #
         # FIXME: @nsethi
         # TODO: this method is expected to return a typed object, not just a string
-        # should probably put this behind an 
+        # should probably put this behind an
         if isinstance(returned_value_from_secret, str):
             return str(repr(returned_value_from_secret))[1:-1]
         return returned_value_from_secret
