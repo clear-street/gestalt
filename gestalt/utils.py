@@ -3,9 +3,9 @@ import collections.abc as collections
 
 
 def flatten(
-    d: MutableMapping[Text, Any],
-    parent_key: str = '',
-    sep: str = '.'
+        d: MutableMapping[Text, Any],
+        parent_key: str = '',
+        sep: str = '.'
 ) -> Dict[Text, Union[List[Any], Text, int, bool, float]]:
     items: List[Any] = []
     for k, v in d.items():

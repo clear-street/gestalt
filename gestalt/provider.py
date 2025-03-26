@@ -5,6 +5,7 @@ from typing import Tuple, Dict, Any, Optional, Union, List
 class Provider(metaclass=ABCMeta):
     """Abstract provider class
     """
+
     @abstractmethod
     def __init__(self, *args: Tuple[Any], **kwargs: Dict[Any, Any]):
         """Abstract initializer for the Provider class with ProviderConfig

@@ -16,6 +16,7 @@ EXPIRATION_THRESHOLD_HOURS = 1
 
 
 class Vault(Provider):
+
     def __init__(
         self,
         cert: Optional[Tuple[str, str]] = None,
@@ -114,13 +115,12 @@ class Vault(Provider):
     def __del__(self) -> None:
         self.stop()
 
-    def get(
-        self,
-        key: str,
-        path: str,
-        filter: str,
-        sep: Optional[str] = "."
-    ) -> Union[str, int, float, bool, List[Any]]:
+    def get(self,
+            key: str,
+            path: str,
+            filter: str,
+            sep: Optional[str] = "."
+            ) -> Union[str, int, float, bool, List[Any]]:
         """Gets secret from vault
         Args:
             key (str): key to get secret from
@@ -170,14 +170,19 @@ class Vault(Provider):
                 "Gestalt Error: Gestalt couldn't connect to Vault")
         except Exception as err:
             raise RuntimeError(f"Gestalt Error: {err}")
+
         if filter is None:
             return requested_data
+
         secret = requested_data
         jsonpath_expression = parse(f"${filter}")
         match = jsonpath_expression.find(secret)
+
         if len(match) == 0:
             print("Path returned not matches for your secret")
-        returned_value_from_secret = match[0].value
+
+        returned_value_from_secret: Union[str, int, float,
+                                          List[Any]] = match[0].value
         if returned_value_from_secret == "":
             raise RuntimeError("Gestalt Error: Empty secret!")
 
@@ -185,10 +190,14 @@ class Vault(Provider):
         if "ttl" in requested_data:
             self._set_secrets_ttl(requested_data, key)
 
+        # TODO: unclear what this note means, was left my a previous dev along time ago.
+        # should figure out what this does and why it's here.
+        #
         # repr is converting the string to RAW string since \\$ was returning $\
         # Then we are removing single quotes (first and last char)
-        #
-        return str(repr(returned_value_from_secret))[1:-1]
+        if isinstance(returned_value_from_secret, str):
+            return str(repr(returned_value_from_secret))[1:-1]
+        return returned_value_from_secret
 
     def _is_secret_expired(self, key: str) -> bool:
         now = datetime.now()

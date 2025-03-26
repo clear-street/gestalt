@@ -6,6 +6,7 @@ import requests
 
 
 class MockSession(requests.Session):
+
     def request(self, *_, **__):
         resp = {
             "request_id": "230f5e67-e55d-bdae-bd24-c7bc13c1a3e9",
@@ -28,6 +29,7 @@ class MockSession(requests.Session):
 
 
 class MockResponse:
+
     def __init__(self, json_data, status_code):
         self.json_data = json_data
         self.status_code = status_code
@@ -65,7 +67,7 @@ def mount_setup():
     client.secrets.kv.v2.create_or_update_secret(
         mount_point="test-mount",
         path="test",
-        secret=dict(test_mount="test_mount_password\\$"),
+        secret=dict(test_mount="test_mount_password\\$", threshold=.18),
     )
 
 
