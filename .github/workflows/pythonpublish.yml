@@ -21,4 +21,5 @@ jobs:
       env:
         UV_PUBLISH_TOKEN: ${{ secrets.GESTALT_API_TOKEN }}
       run: |
+        uv build
         uv publish
