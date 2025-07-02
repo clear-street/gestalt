@@ -44,7 +44,7 @@ g.build_config()
 
 my_val_1 = g.get_string('some.nested.string')
 my_val_2 = g.get_int('someint')
-my_val_3 = g.get_float('somekey', 57.29) # If 'somekey' doesn't exist, retrun default value
+my_val_3 = g.get_float('somekey', 57.29) # If 'somekey' doesn't exist, return default value
 
 g.set_bool('my_custom_config', True)
 g.get_list('my_custom_config') # Raises TypeError, as this key is a bool, and we asked for a list
@@ -92,7 +92,7 @@ After all the directory paths and files are added, we can render them:
 g.build_config()
 ```
 
-Note that the the last added directory path takes the most precedence, and will override conflicting keys from previous paths. Individual files take precedence over directories. In addition to this, the rendering flattens the config, for example, the configuration:
+Note that the last added directory path takes the most precedence, and will override conflicting keys from previous paths. Individual files take precedence over directories. In addition to this, the rendering flattens the config, for example, the configuration:
 
 ```json
 {
@@ -283,7 +283,7 @@ The interpolation value needs to be set as follows:
 key: ref+provider://some-path#filter
 ```
 
-where `provider`, is the name of the provider, `some-path` is the path for the secret in your provider and `filter` is used to travese the key once fectched that you want to run on the response if the response is a nested object.
+where `provider`, is the name of the provider, `some-path` is the path for the secret in your provider and `filter` is used to traverse the key once fectched that you want to run on the response if the response is a nested object.
 
 The filter is a flattened list with `.` as the generic delimiter in gestalt after flattening.
 
@@ -319,7 +319,7 @@ Gestalt supports the following providers
 ## Vault Provider
 
 Vault Provider is a provider support from gestalt to hashicorp vault.
-To instatiate your provider, please use `config_provider` method in gestalt.
+To instantiate your provider, please use `config_provider` method in gestalt.
 Providing the method with a VaultConfig, will configure the provider to connect
 with your instance of Vault wherever it is running whether it be local instance
 or a cloud instance.
@@ -331,7 +331,7 @@ Raises a RuntimeError, if the path provided in `add_vault_secret_path` is invali
 VaultConfig is a dataclass of type ProviderClass that takes all the vault configuration needed to
 connect to the vault instance.
 
-VAULT_ADDR and VAULT_TOKEN are two common environment varibales that are set for working with vault. Hence to work and use the default setup, the Gestalt Vault configuration can read the values from those environment variables on your behalf.
+VAULT_ADDR and VAULT_TOKEN are two common environment variables that are set for working with vault. Hence to work and use the default setup, the Gestalt Vault configuration can read the values from those environment variables on your behalf.
 
 Parameter | Datatype | Default | Required |
 ---       |   ---    |   ---   | --- |
