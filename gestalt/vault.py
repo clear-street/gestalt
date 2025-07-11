@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime, timedelta, timezone
 from queue import Queue
@@ -13,6 +14,8 @@ from gestalt.provider import Provider
 from dateutil.parser import isoparse
 
 EXPIRATION_THRESHOLD_HOURS = 1
+
+logger = logging.getLogger(__name__)
 
 
 class Vault(Provider):
@@ -93,7 +96,7 @@ class Vault(Provider):
                 )
 
                 if token is not None:
-                    print("Kubernetes login successful")
+                    logger.info("Kubernetes login successful")
                     kubes_token = (
                         "kubernetes",
                         token["data"]["id"],
@@ -179,7 +182,7 @@ class Vault(Provider):
         match = jsonpath_expression.find(secret)
 
         if len(match) == 0:
-            print("Path returned not matches for your secret")
+            logger.warning("Path returned not matches for your secret")
 
         returned_value_from_secret: Union[str, int, float,
                                           List[Any]] = match[0].value
@@ -236,11 +239,11 @@ class Vault(Provider):
             delta_time = (expire_time - current_time).total_seconds() / 3600
 
             if delta_time < EXPIRATION_THRESHOLD_HOURS:
-                print(f"Re-authenticating with vault")
+                logger.info("Re-authenticating with vault")
                 self.connect()
             else:
-                print(f"Token still valid for: {delta_time} hours")
+                logger.debug(f"Token still valid for: {delta_time} hours")
         else:
-            print(
+            logger.warning(
                 f"Can't reconnect, token information: {self.kubes_token}, not valid"
             )
