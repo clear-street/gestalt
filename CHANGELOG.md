@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
+## [3.4.6] - 2025-07-14
+- Write messages to logger instead of `print`ing.
+
+## [3.4.5] - 2025-04-02
+- Update package metadata.
+
 ## [3.4.4] - 2025-04-02
 - Fix publish workflow to use token-based authentication.
 
@@ -13,13 +19,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [3.4.2] - 2024-08-05
 
 ### Fixed
-- Adding logic to check when the token is about to expire to re-connect. This fix cases for services that are running longer that token's ttl without restarting. Causing requests to get a Permission denied error.  
+- Adding logic to check when the token is about to expire to re-connect. This fix cases for services that are running longer that token's ttl without restarting. Causing requests to get a Permission denied error.
 
 
 ## [3.4.1] - 2024-07-12
 
 ### Fixed
-- Returning Raw string instead of parsing. This fixes the case where secret has \\$ in - Python would return \$ - therefore we are calling repr 
+- Returning Raw string instead of parsing. This fixes the case where secret has \\$ in - Python would return \$ - therefore we are calling repr
 
 ## [3.4.0] - 2024-03-04
 
@@ -64,9 +70,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - Removed async usage throughout the project
 
 ## 3.3.0 - 2023-06-21
-### Added 
+### Added
 - Vault Response Caching in the provider with a TTL
-- Dispatch to get interpolated scheme instead of 
+- Dispatch to get interpolated scheme instead of
 
 ### Changed
 - Moved pytest fixtures into a dedicated conftest.py
@@ -117,7 +123,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - README.md documentation
 - GitHub Actions improved for Python
 
-### Fixed 
+### Fixed
 - Generic Exceptions raised as RuntimeError
 
 ## 1.0.9 - 2021-06-15
@@ -141,7 +147,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 **NOTE: This can be a potential breaking change depending on how glob.glob() works on your system.**
 
 ### Fixed
-- Files are now globbed and sorted before loading to ensure deterministic order. 
+- Files are now globbed and sorted before loading to ensure deterministic order.
 - File extension checking for config
 
 ### Added
@@ -160,4 +166,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## 1.0.0 - 2020-01-06
 ### Added
 - Initial Release
-
